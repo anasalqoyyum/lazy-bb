@@ -9,6 +9,7 @@ import (
 
 // Config holds the application configuration
 type Config struct {
+	Email     string
 	APIToken  string
 	Workspace string
 	Project   string
@@ -21,6 +22,7 @@ func LoadConfig() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
+		Email:     os.Getenv("BITBUCKET_EMAIL"),
 		APIToken:  os.Getenv("BITBUCKET_TOKEN"),
 		Workspace: os.Getenv("BITBUCKET_WORKSPACE"),
 		Project:   os.Getenv("BITBUCKET_PROJECT"),
@@ -29,6 +31,9 @@ func LoadConfig() (*Config, error) {
 
 	// Validate required fields
 	var missingFields []string
+	if cfg.Email == "" {
+		missingFields = append(missingFields, "BITBUCKET_EMAIL")
+	}
 	if cfg.APIToken == "" {
 		missingFields = append(missingFields, "BITBUCKET_TOKEN")
 	}

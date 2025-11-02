@@ -9,14 +9,15 @@ A terminal user interface (TUI) for browsing Bitbucket pull requests built with 
 - **Side-by-side view** - PR list on the left, detailed view on the right
 - **Color-coded status** - Visual indicators for PR states (OPEN, MERGED, DECLINED)
 - **Open in browser** - Press Enter to open PR in your default browser
-- **Bearer token authentication** - Secure Bitbucket API access via Bearer tokens
+- **Basic auth** - Secure Bitbucket API access with email and app password
 
 ## Setup
 
 ### Prerequisites
 
 - Go 1.24+
-- Bitbucket Bearer token
+- Bitbucket email address
+- Bitbucket app password
 
 ### Installation
 
@@ -29,7 +30,8 @@ go install github.com/anasalqoyyum/lazy-bb@latest
 Set the following environment variables:
 
 ```bash
-export BITBUCKET_TOKEN=your_api_token_here
+export BITBUCKET_EMAIL=your_bitbucket_email@example.com
+export BITBUCKET_TOKEN=your_app_password_here
 export BITBUCKET_WORKSPACE=your_workspace
 export BITBUCKET_REPO=your_repository
 ```
@@ -38,19 +40,21 @@ export BITBUCKET_REPO=your_repository
 
 ```bash
 # .env
-BITBUCKET_TOKEN=your_api_token_here
+BITBUCKET_EMAIL=your_bitbucket_email@example.com
+BITBUCKET_TOKEN=your_app_password_here
 BITBUCKET_WORKSPACE=your_workspace
 BITBUCKET_REPO=your_repository
 ```
 
 The app will automatically load from `.env` if it exists.
 
-**Getting your Bitbucket Bearer token:**
+**Getting your Bitbucket app password:**
 
 1. Go to <https://bitbucket.org/account/settings/app-passwords/>
 2. Click "Create app password"
 3. Give it a name and select at least "pullrequest:read" scope
-4. Copy the generated token and use it as your `BITBUCKET_TOKEN`
+4. Copy the generated password and use it as your `BITBUCKET_TOKEN`
+5. Use your Bitbucket email address as `BITBUCKET_EMAIL`
 
 ## Usage
 
@@ -146,11 +150,12 @@ The app uses the Bubble Tea architecture with organized internal packages:
 
 **"missing required environment variables"**
 
-- Ensure `BITBUCKET_TOKEN`, `BITBUCKET_WORKSPACE`, and `BITBUCKET_REPO` are set
+- Ensure `BITBUCKET_EMAIL`, `BITBUCKET_TOKEN`, `BITBUCKET_WORKSPACE`, and `BITBUCKET_REPO` are set
 
 **"API returned status 401"**
 
-- Check your API token is valid and has "pullrequest:read" permissions
+- Check your email and app password are correct
+- Verify the app password has "pullrequest:read" permissions
 
 **"failed to open browser"**
 

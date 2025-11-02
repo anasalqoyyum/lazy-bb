@@ -10,15 +10,17 @@ import (
 // Client is a Bitbucket API client
 type Client struct {
 	baseURL   string
+	email     string
 	apiToken  string
 	workspace string
 	repo      string
 }
 
 // NewClient creates a new Bitbucket API client
-func NewClient(apiToken, workspace, repo string) *Client {
+func NewClient(email, apiToken, workspace, repo string) *Client {
 	return &Client{
 		baseURL:   "https://api.bitbucket.org/2.0",
+		email:     email,
 		apiToken:  apiToken,
 		workspace: workspace,
 		repo:      repo,
@@ -34,8 +36,8 @@ func (c *Client) FetchPRs() ([]PR, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set up Bearer token authentication
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiToken))
+	// Set up Basic Auth with email:apiToken
+	req.SetBasicAuth(c.email, c.apiToken)
 	req.Header.Set("Accept", "application/json")
 
 	client := &http.Client{}

@@ -211,7 +211,7 @@ func main() {
 	}
 
 	// Create API client
-	client := api.NewClient(cfg.APIToken, cfg.Workspace, cfg.Repo)
+	client := api.NewClient(cfg.Email, cfg.APIToken, cfg.Workspace, cfg.Repo)
 
 	m := initialModel()
 	m.client = client
