@@ -139,7 +139,6 @@ func fetchReposCmd(client *api.Client) tea.Cmd {
 			return errMsg(err)
 		}
 
-		// Convert to UI repositories
 		uiRepos := make([]ui.Repository, len(repos))
 		for i, repo := range repos {
 			uiRepos[i] = ui.Repository{
@@ -196,15 +195,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		// Handle refresh
 		if key.Matches(msg, refreshKeys) && !m.loadingPRs {
 			m.loadingPRs = true
 			return m, fetchPRsCmd(m.client, "")
 		}
 
-		// Handle focus switching
 		if key.Matches(msg, focusPRListKeys) && !m.loadingPRs {
-			// Only allow focus if there are PRs to display
 			if len(m.prs) > 0 {
 				m.prList.Focused = true
 				m.prDetail.Focused = false
@@ -221,7 +217,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if key.Matches(msg, focusRepoListKeys) {
-			// Only allow focus if there are repos to display
 			if len(m.repos) > 0 {
 				m.prList.Focused = false
 				m.prDetail.Focused = false
@@ -327,7 +322,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.repos = msg.repos
 		m.repoList.SetRepositories(msg.repos)
 
-		// Auto-select the first repo if available
 		if len(msg.repos) > 0 {
 			m.selectedRepo = &msg.repos[0]
 			m.repoList.SetSelected(0)
@@ -340,7 +334,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case statusMsg:
-		// This prevents out-of-order responses from showing old data
 		if msg.repoSlug != m.lastRequestedRepo {
 			m.loadingPRs = false
 			return m, nil
@@ -398,14 +391,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	default:
-		if m.loading {
-			var cmd tea.Cmd
-			m.spinner, cmd = m.spinner.Update(msg)
-			return m, cmd
-		}
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 	}
-
-	return m, nil
 }
 
 func (m model) View() string {
