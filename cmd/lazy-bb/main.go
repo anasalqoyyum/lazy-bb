@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -18,15 +19,13 @@ import (
 
 type errMsg error
 
-// reposMsg is used to update repos list
 type reposMsg struct {
 	repos []ui.Repository
 }
 
-// statusMsg is used to update PR list
 type statusMsg struct {
 	prs      []api.PR
-	repoSlug string // Track which repo these PRs belong to
+	repoSlug string
 }
 
 type model struct {
@@ -43,8 +42,8 @@ type model struct {
 	prs               []api.PR
 	repos             []ui.Repository
 	selectedRepo      *ui.Repository
-	loadingPRs        bool   // Separate loading state for PRs only
-	lastRequestedRepo string // Track the slug of the most recently requested repo
+	loadingPRs        bool
+	lastRequestedRepo string
 }
 
 var quitKeys = key.NewBinding(
@@ -129,7 +128,6 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
-// fetchReposCmd fetches repositories from Bitbucket API
 func fetchReposCmd(client *api.Client) tea.Cmd {
 	return func() tea.Msg {
 		if client == nil {
@@ -155,7 +153,6 @@ func fetchReposCmd(client *api.Client) tea.Cmd {
 	}
 }
 
-// fetchPRsCmd fetches PRs from Bitbucket API for a specific repo
 func fetchPRsCmd(client *api.Client, repoSlug string) tea.Cmd {
 	return func() tea.Msg {
 		if client == nil {
@@ -233,16 +230,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Handle Tab to cycle between PR list and Repo list
 		if key.Matches(msg, cycleLeftPaneKeys) {
 			if m.prList.Focused {
-				// Cycle from PR list to Repo list (only if repos exist)
 				if len(m.repos) > 0 {
 					m.prList.Focused = false
 					m.repoList.Focused = true
 				}
 			} else if m.repoList.Focused {
-				// Cycle from Repo list to PR list (only if PRs exist)
 				if len(m.prs) > 0 {
 					m.repoList.Focused = false
 					m.prList.Focused = true
@@ -251,7 +245,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// If PR list is focused, navigate through PRs
 		if m.prList.Focused && !m.loadingPRs && len(m.prs) > 0 {
 			if key.Matches(msg, upKeys) {
 				m.prList.MoveUp()
@@ -282,7 +275,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// If repo list is focused, navigate through repos
 		if m.repoList.Focused && len(m.repos) > 0 {
 			if key.Matches(msg, upKeys) {
 				m.repoList.MoveUp()
@@ -299,9 +291,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if selected != nil {
 					m.selectedRepo = selected
 					m.repoList.SetSelected(m.repoList.Cursor)
-					// Track that we're requesting PRs for this repo
 					m.lastRequestedRepo = selected.Slug
-					// Start loading PRs for the selected repo
 					m.loadingPRs = true
 					return m, fetchPRsCmd(m.client, selected.Slug)
 				}
@@ -309,7 +299,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// If detail is focused, scroll through content
 		if m.prDetail.Focused && !m.loadingPRs {
 			if key.Matches(msg, upKeys) {
 				m.prDetail.ScrollUp()
@@ -342,19 +331,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(msg.repos) > 0 {
 			m.selectedRepo = &msg.repos[0]
 			m.repoList.SetSelected(0)
-			// Track that we're requesting PRs for this repo
 			m.lastRequestedRepo = msg.repos[0].Slug
-			// Fetch PRs for the first repo
 			m.loadingPRs = true
 			return m, fetchPRsCmd(m.client, msg.repos[0].Slug)
 		}
 
-		// No repos found, stop loading
 		m.loading = false
 		return m, nil
 
 	case statusMsg:
-		// Only update PRs if they're from the most recently requested repo
 		// This prevents out-of-order responses from showing old data
 		if msg.repoSlug != m.lastRequestedRepo {
 			m.loadingPRs = false
@@ -362,10 +347,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.loadingPRs = false
-		m.loading = false // Mark complete loading as done
+		m.loading = false
 		m.prs = msg.prs
 
-		// Convert PRs to internal format
 		internalPRs := make([]ui.PR, len(msg.prs))
 		for i, pr := range msg.prs {
 			authorName := pr.Author.FullName
@@ -390,8 +374,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Description: pr.Description,
 				Author:      authorName,
 				State:       pr.State,
-				CreatedOn:   pr.CreatedOn.Format("2006-01-02 15:04"),
-				UpdatedOn:   pr.UpdatedOn.Format("2006-01-02 15:04"),
+				CreatedOn:   pr.CreatedOn.Format(time.DateTime),
+				UpdatedOn:   pr.UpdatedOn.Format(time.DateTime),
 				Workspace:   workspace,
 				Repo:        repo,
 				Links: ui.Links{
@@ -430,7 +414,6 @@ func (m model) View() string {
 	}
 
 	if m.loading {
-		// Initial loading (repos + PRs)
 		str := fmt.Sprintf("\n\n   %s Loading... %s\n\n", m.spinner.View(), quitKeys.Help().Desc)
 		if m.quitting {
 			return str + "\n"
@@ -438,11 +421,10 @@ func (m model) View() string {
 		return str
 	}
 
-	// Create left panel: PR list + Repo list (stacked vertically)
 	prListView := m.prList.View()
 	repoListView := m.repoList.View()
+	detailView := m.prDetail.View()
 
-	// If loading PRs, show spinner in PR list area
 	if m.loadingPRs {
 		prListView = lipgloss.NewStyle().
 			Width(m.prList.Width).
@@ -455,22 +437,16 @@ func (m model) View() string {
 
 	leftPanel := lipgloss.JoinVertical(lipgloss.Top, prListView, repoListView)
 
-	// Create right panel: Detail view (full height)
-	detailView := m.prDetail.View()
-
-	// Combine left and right panels horizontally
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, detailView)
 }
 
 func main() {
-	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		fmt.Printf("Configuration error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Create API client
 	client := api.NewClient(cfg.Email, cfg.APIToken, cfg.Workspace, cfg.Repo)
 
 	m := initialModel()

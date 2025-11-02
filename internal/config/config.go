@@ -7,7 +7,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config holds the application configuration
 type Config struct {
 	Email     string
 	APIToken  string
@@ -16,7 +15,6 @@ type Config struct {
 	Repo      string
 }
 
-// LoadConfig loads configuration from environment variables or .env file
 func LoadConfig() (*Config, error) {
 	// Try to load .env file if it exists (don't fail if it doesn't)
 	_ = godotenv.Load()
@@ -29,7 +27,6 @@ func LoadConfig() (*Config, error) {
 		Repo:      os.Getenv("BITBUCKET_REPO"),
 	}
 
-	// Validate required fields
 	var missingFields []string
 	if cfg.Email == "" {
 		missingFields = append(missingFields, "BITBUCKET_EMAIL")

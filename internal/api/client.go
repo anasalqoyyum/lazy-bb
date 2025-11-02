@@ -7,7 +7,6 @@ import (
 	"net/http"
 )
 
-// Client is a Bitbucket API client
 type Client struct {
 	baseURL   string
 	email     string
@@ -16,7 +15,6 @@ type Client struct {
 	repo      string
 }
 
-// NewClient creates a new Bitbucket API client
 func NewClient(email, apiToken, workspace, repo string) *Client {
 	return &Client{
 		baseURL:   "https://api.bitbucket.org/2.0",
@@ -42,7 +40,6 @@ func (c *Client) FetchPRs(repoSlug string) ([]PR, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set up Basic Auth with email:apiToken
 	req.SetBasicAuth(c.email, c.apiToken)
 	req.Header.Set("Accept", "application/json")
 
@@ -53,13 +50,11 @@ func (c *Client) FetchPRs(repoSlug string) ([]PR, error) {
 	}
 	defer resp.Body.Close()
 
-	// Check for HTTP errors
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
@@ -85,7 +80,6 @@ func (c *Client) FetchRepositories(role string) ([]Repository, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set up Basic Auth with email:apiToken
 	req.SetBasicAuth(c.email, c.apiToken)
 	req.Header.Set("Accept", "application/json")
 
@@ -96,13 +90,11 @@ func (c *Client) FetchRepositories(role string) ([]Repository, error) {
 	}
 	defer resp.Body.Close()
 
-	// Check for HTTP errors
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
