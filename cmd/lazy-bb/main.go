@@ -56,10 +56,35 @@ var enterKeys = key.NewBinding(
 	key.WithHelp("enter", "open in browser"),
 )
 
+var focusPRListKeys = key.NewBinding(
+	key.WithKeys("1"),
+	key.WithHelp("1", "focus PR list"),
+)
+
+var focusDetailKeys = key.NewBinding(
+	key.WithKeys("2"),
+	key.WithHelp("2", "focus detail"),
+)
+
+var refreshKeys = key.NewBinding(
+	key.WithKeys("r"),
+	key.WithHelp("r", "refresh PR list"),
+)
+
+var halfScrollUpKeys = key.NewBinding(
+	key.WithKeys("ctrl+u"),
+	key.WithHelp("ctrl+u", "half page up"),
+)
+
+var halfScrollDownKeys = key.NewBinding(
+	key.WithKeys("ctrl+d"),
+	key.WithHelp("ctrl+d", "half page down"),
+)
+
 func initialModel() model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
 
 	// Use default sizes, will be updated on first WindowSizeMsg
 	halfWidth := 90
@@ -118,32 +143,77 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		if key.Matches(msg, upKeys) && !m.loading {
-			m.prList.MoveUp()
-			selected := m.prList.GetSelected()
-			if selected != nil {
-				m.prDetail.SetPR(selected)
-			}
+		// Handle refresh
+		if key.Matches(msg, refreshKeys) && !m.loading {
+			m.loading = true
+			return m, fetchPRsCmd(m.client)
+		}
+
+		// Handle focus switching
+		if key.Matches(msg, focusPRListKeys) && !m.loading {
+			m.prList.Focused = true
+			m.prDetail.Focused = false
 			return m, nil
 		}
 
-		if key.Matches(msg, downKeys) && !m.loading {
-			m.prList.MoveDown()
-			selected := m.prList.GetSelected()
-			if selected != nil {
-				m.prDetail.SetPR(selected)
-			}
+		if key.Matches(msg, focusDetailKeys) && !m.loading {
+			m.prList.Focused = false
+			m.prDetail.Focused = true
 			return m, nil
 		}
 
-		if key.Matches(msg, enterKeys) && !m.loading {
-			selected := m.prList.GetSelected()
-			if selected != nil {
-				if err := utils.OpenBrowser(selected.Links.HTML.Href); err != nil {
-					m.err = err
+		// If list is focused, navigate through PRs
+		if m.prList.Focused && !m.loading {
+			if key.Matches(msg, upKeys) {
+				m.prList.MoveUp()
+				selected := m.prList.GetSelected()
+				if selected != nil {
+					m.prDetail.SetPR(selected)
 				}
+				return m, nil
 			}
-			return m, nil
+
+			if key.Matches(msg, downKeys) {
+				m.prList.MoveDown()
+				selected := m.prList.GetSelected()
+				if selected != nil {
+					m.prDetail.SetPR(selected)
+				}
+				return m, nil
+			}
+
+			if key.Matches(msg, enterKeys) {
+				selected := m.prList.GetSelected()
+				if selected != nil {
+					if err := utils.OpenBrowser(selected.Links.HTML.Href); err != nil {
+						m.err = err
+					}
+				}
+				return m, nil
+			}
+		}
+
+		// If detail is focused, scroll through content
+		if m.prDetail.Focused && !m.loading {
+			if key.Matches(msg, upKeys) {
+				m.prDetail.ScrollUp()
+				return m, nil
+			}
+
+			if key.Matches(msg, downKeys) {
+				m.prDetail.ScrollDown()
+				return m, nil
+			}
+
+			if key.Matches(msg, halfScrollUpKeys) {
+				m.prDetail.ScrollUpHalf()
+				return m, nil
+			}
+
+			if key.Matches(msg, halfScrollDownKeys) {
+				m.prDetail.ScrollDownHalf()
+				return m, nil
+			}
 		}
 
 		return m, nil

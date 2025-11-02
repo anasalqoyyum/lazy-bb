@@ -11,23 +11,130 @@ import (
 
 // PRDetail represents the right panel with PR details
 type PRDetail struct {
-	PR     *PR
-	Width  int
-	Height int
+	PR           *PR
+	Width        int
+	Height       int
+	Focused      bool
+	ScrollOffset int
 }
 
 // NewPRDetail creates a new PR detail component
 func NewPRDetail(width, height int) *PRDetail {
 	return &PRDetail{
-		PR:     nil,
-		Width:  width,
-		Height: height,
+		PR:           nil,
+		Width:        width,
+		Height:       height,
+		Focused:      false, // Detail is not focused by default
+		ScrollOffset: 0,
 	}
 }
 
 // SetPR sets the PR to display
 func (p *PRDetail) SetPR(pr *PR) {
 	p.PR = pr
+	p.ScrollOffset = 0 // Reset scroll when switching PR
+}
+
+// ScrollUp scrolls the detail view up
+func (p *PRDetail) ScrollUp() {
+	if p.ScrollOffset > 0 {
+		p.ScrollOffset--
+	}
+}
+
+// ScrollDown scrolls the detail view down
+func (p *PRDetail) ScrollDown() {
+	// Calculate if we can scroll down by checking if there's more content
+	totalLines := p.calculateTotalLines()
+	maxLines := p.Height - 4
+	maxScroll := totalLines - maxLines
+	if maxScroll < 0 {
+		maxScroll = 0
+	}
+	if p.ScrollOffset < maxScroll {
+		p.ScrollOffset++
+	}
+}
+
+// ScrollUpHalf scrolls the detail view up by half page
+func (p *PRDetail) ScrollUpHalf() {
+	halfPage := (p.Height - 4) / 2
+	if p.ScrollOffset > halfPage {
+		p.ScrollOffset -= halfPage
+	} else {
+		p.ScrollOffset = 0
+	}
+}
+
+// ScrollDownHalf scrolls the detail view down by half page
+func (p *PRDetail) ScrollDownHalf() {
+	halfPage := (p.Height - 4) / 2
+	// Calculate if we can scroll down by checking if there's more content
+	totalLines := p.calculateTotalLines()
+	maxLines := p.Height - 4
+	maxScroll := totalLines - maxLines
+	if maxScroll < 0 {
+		maxScroll = 0
+	}
+	newOffset := p.ScrollOffset + halfPage
+	if newOffset > maxScroll {
+		p.ScrollOffset = maxScroll
+	} else {
+		p.ScrollOffset = newOffset
+	}
+}
+
+// calculateTotalLines calculates the total number of lines in the PR details
+func (p *PRDetail) calculateTotalLines() int {
+	if p.PR == nil {
+		return 0
+	}
+
+	// Build detail view (same as View but only to get line count)
+	var details bytes.Buffer
+
+	// Title
+	details.WriteString("[Title]\n")
+	details.WriteString(fmt.Sprintf("  %s\n\n", truncateForDisplay(p.PR.Title, p.Width-6)))
+
+	// ID and Status
+	details.WriteString(fmt.Sprintf("[PR #%d - %s]\n\n", p.PR.ID, p.PR.State))
+
+	// Author
+	details.WriteString("[Author]\n")
+	details.WriteString(fmt.Sprintf("  %s\n\n", p.PR.Author))
+
+	// Repository
+	if p.PR.Workspace != "" && p.PR.Repo != "" {
+		details.WriteString("[Repository]\n")
+		details.WriteString(fmt.Sprintf("  %s/%s\n\n", p.PR.Workspace, p.PR.Repo))
+	}
+
+	// Created/Updated
+	details.WriteString("[Dates]\n")
+	details.WriteString(fmt.Sprintf("  Created: %s\n", p.PR.CreatedOn))
+	details.WriteString(fmt.Sprintf("  Updated: %s\n\n", p.PR.UpdatedOn))
+
+	// Description with markdown rendering
+	if p.PR.Description != "" {
+		details.WriteString("[Description]\n")
+		renderedDesc := p.renderMarkdown(p.PR.Description)
+		details.WriteString(fmt.Sprintf("  %s\n\n", renderedDesc))
+	}
+
+	// Link
+	details.WriteString("[Link]\n")
+	details.WriteString(fmt.Sprintf("  %s\n", truncateForDisplay(p.PR.Links.HTML.Href, p.Width-6)))
+
+	// Get the rendered content
+	content := details.String()
+
+	// Wrap content to fit within available width
+	wrappedContent := wrapContent(content, p.Width-6)
+
+	// Split into lines and count
+	contentLines := strings.Split(wrappedContent, "\n")
+	return len(contentLines)
 }
 
 // renderMarkdown renders markdown content using glamour (glow's library)
@@ -71,8 +178,8 @@ func (p *PRDetail) View() string {
 	// Build detail view
 	var details bytes.Buffer
 
-	// Title
-	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("87"))
+	// Title - Tokyo Night colors
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7aa2f7"))
 	details.WriteString(titleStyle.Render("Title"))
 	details.WriteString("\n")
 	details.WriteString(fmt.Sprintf("  %s\n\n", truncateForDisplay(p.PR.Title, p.Width-6)))
@@ -81,11 +188,11 @@ func (p *PRDetail) View() string {
 	statusStyle := lipgloss.NewStyle()
 	switch p.PR.State {
 	case "OPEN":
-		statusStyle = statusStyle.Foreground(lipgloss.Color("42"))
+		statusStyle = statusStyle.Foreground(lipgloss.Color("#7aa2f7")) // Tokyo Night Blue
 	case "MERGED":
-		statusStyle = statusStyle.Foreground(lipgloss.Color("99"))
+		statusStyle = statusStyle.Foreground(lipgloss.Color("#bb9af7")) // Tokyo Night Purple
 	case "DECLINED":
-		statusStyle = statusStyle.Foreground(lipgloss.Color("196"))
+		statusStyle = statusStyle.Foreground(lipgloss.Color("#f7768e")) // Tokyo Night Red
 	}
 
 	details.WriteString(titleStyle.Render("PR #" + fmt.Sprintf("%d", p.PR.ID) + " - "))
@@ -122,7 +229,7 @@ func (p *PRDetail) View() string {
 	// Link
 	details.WriteString(titleStyle.Render("Link"))
 	details.WriteString("\n")
-	linkStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("33")).Underline(true)
+	linkStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7")).Underline(true)
 	details.WriteString(linkStyle.Render(fmt.Sprintf("  %s\n", truncateForDisplay(p.PR.Links.HTML.Href, p.Width-6))))
 
 	// Get the rendered content
@@ -131,21 +238,52 @@ func (p *PRDetail) View() string {
 	// Wrap content to fit within available width
 	wrappedContent := wrapContent(content, p.Width-6)
 
-	// Limit total height
+	// Split into lines for scrolling
 	contentLines := strings.Split(wrappedContent, "\n")
 	maxLines := p.Height - 4
-	if len(contentLines) > maxLines {
-		contentLines = contentLines[:maxLines]
-		wrappedContent = strings.Join(contentLines, "\n")
+
+	// Apply scroll offset
+	startLine := p.ScrollOffset
+	if startLine >= len(contentLines) {
+		startLine = len(contentLines) - maxLines
+		if startLine < 0 {
+			startLine = 0
+		}
 	}
+
+	var displayLines []string
+	for i := startLine; i < len(contentLines) && len(displayLines) < maxLines; i++ {
+		displayLines = append(displayLines, contentLines[i])
+	}
+
+	displayContent := strings.Join(displayLines, "\n")
+
+	// Determine border color based on focus - Tokyo Night colors
+	borderColor := lipgloss.Color("#565f89")
+	if p.Focused {
+		borderColor = lipgloss.Color("#7aa2f7")
+	}
+
+	// Add panel title with Tokyo Night styling
+	panelTitleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	if p.Focused {
+		panelTitleStyle = panelTitleStyle.Bold(true)
+	}
+	titleLine := panelTitleStyle.Render("[2]-Details")
+
+	// Create separator for margin
+	separatorLine := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89")).Render(strings.Repeat("─", p.Width-6))
+
+	// Combine title with content
+	finalContent := titleLine + "\n" + separatorLine + "\n" + displayContent
 
 	return lipgloss.NewStyle().
 		Width(p.Width).
 		Height(p.Height).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("63")).
-		Padding(1, 2).
-		Render(wrappedContent)
+		BorderForeground(borderColor).
+		Padding(0, 2).
+		Render(finalContent)
 }
 
 // truncateForDisplay truncates a string to fit within a display width

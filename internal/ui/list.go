@@ -14,6 +14,7 @@ type PRList struct {
 	Cursor       int
 	Width        int
 	Height       int
+	Focused      bool
 }
 
 type PR struct {
@@ -44,6 +45,7 @@ func NewPRList(width, height int) *PRList {
 		Cursor:       0,
 		Width:        width,
 		Height:       height,
+		Focused:      true, // List is focused by default
 	}
 }
 
@@ -132,11 +134,11 @@ func (p *PRList) View() string {
 		colRepo = int(float64(colRepo) * scaleFactor)
 	}
 
-	// Header style
+	// Header style - Tokyo Night colors
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("255")).
-		Background(lipgloss.Color("63"))
+		Foreground(lipgloss.Color("#ffffff")).
+		Background(lipgloss.Color("#1f2335"))
 
 	// Build header (apply style after building plain text)
 	headerText := fmt.Sprintf("%s │ %s │ %s │ %s │ %s",
@@ -166,13 +168,13 @@ func (p *PRList) View() string {
 		var stateColor string
 		switch pr.State {
 		case "OPEN":
-			stateColor = "42" // Green
+			stateColor = "#7aa2f7" // Tokyo Night Blue
 		case "MERGED":
-			stateColor = "99" // Purple
+			stateColor = "#bb9af7" // Tokyo Night Purple
 		case "DECLINED":
-			stateColor = "196" // Red
+			stateColor = "#f7768e" // Tokyo Night Red
 		default:
-			stateColor = "250" // Gray
+			stateColor = "#a9b1d6" // Tokyo Night Foreground
 		}
 
 		// Repo info
@@ -208,10 +210,19 @@ func (p *PRList) View() string {
 
 	// Separator line
 	separatorText := strings.Repeat("─", availableWidth)
-	separator := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(separatorText)
+	separator := lipgloss.NewStyle().Foreground(lipgloss.Color("#565f89")).Render(separatorText)
 
 	// Build output
 	var output strings.Builder
+
+	// Add panel title with Tokyo Night styling
+	titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#7aa2f7"))
+	if p.Focused {
+		titleStyle = titleStyle.Bold(true)
+	}
+	output.WriteString(titleStyle.Render("[1]-PRs") + "\n")
+	output.WriteString(separator + "\n")
+
 	output.WriteString(header + "\n")
 	output.WriteString(separator + "\n")
 	for _, row := range rows {
@@ -219,15 +230,22 @@ func (p *PRList) View() string {
 	}
 
 	// Add status bar
-	statusText := fmt.Sprintf("[%d/%d] Use ↑↓ to navigate, Enter to open, q to quit",
+	statusText := fmt.Sprintf("[%d/%d] Use ↑↓ to navigate, Enter to open, r to refresh, q to quit",
 		p.Cursor+1, len(p.PullRequests))
 	output.WriteString("\n" + statusText)
 
-	return lipgloss.NewStyle().
+	// Determine border color based on focus - Tokyo Night colors
+	borderColor := lipgloss.Color("#565f89")
+	if p.Focused {
+		borderColor = lipgloss.Color("#7aa2f7")
+	}
+
+	borderStyle := lipgloss.NewStyle().
 		Width(p.Width).
 		Height(p.Height).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("63")).
-		Padding(0, 1).
-		Render(output.String())
+		BorderForeground(borderColor).
+		Padding(0, 1)
+
+	return borderStyle.Render(output.String())
 }
