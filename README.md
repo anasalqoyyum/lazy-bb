@@ -9,14 +9,14 @@ A terminal user interface (TUI) for browsing Bitbucket pull requests built with 
 - **Side-by-side view** - PR list on the left, detailed view on the right
 - **Color-coded status** - Visual indicators for PR states (OPEN, MERGED, DECLINED)
 - **Open in browser** - Press Enter to open PR in your default browser
-- **API token authentication** - Secure Bitbucket API access via environment variables
+- **Bearer token authentication** - Secure Bitbucket API access via Bearer tokens
 
 ## Setup
 
 ### Prerequisites
 
 - Go 1.24+
-- Bitbucket API token
+- Bitbucket Bearer token
 
 ### Installation
 
@@ -45,12 +45,12 @@ BITBUCKET_REPO=your_repository
 
 The app will automatically load from `.env` if it exists.
 
-**Getting your Bitbucket API token:**
+**Getting your Bitbucket Bearer token:**
 
 1. Go to <https://bitbucket.org/account/settings/app-passwords/>
 2. Click "Create app password"
 3. Give it a name and select at least "pullrequest:read" scope
-4. Copy the generated token
+4. Copy the generated token and use it as your `BITBUCKET_TOKEN`
 
 ## Usage
 
@@ -73,25 +73,31 @@ lazy-bb
 
 ```
 lazy-bb/
-├── main.go              # Main application and tea.Model
-├── config.go            # Configuration management
-├── client.go            # Bitbucket API client
-├── models.go            # Data structures for PR objects
-├── internals/
-│   ├── list.go          # PR list component (left panel)
-│   └── detail.go        # PR detail component (right panel)
-└── utils/
-    └── browser.go       # Browser launching utility
+├── cmd/
+│   └── lazy-bb/
+│       └── main.go              # Application entry point
+├── internal/
+│   ├── api/
+│   │   ├── client.go            # Bitbucket API client
+│   │   └── models.go            # Data structures for PR objects
+│   ├── config/
+│   │   └── config.go            # Configuration management
+│   ├── ui/
+│   │   ├── list.go              # PR list component (left panel)
+│   │   └── detail.go            # PR detail component (right panel)
+│   └── utils/
+│       └── browser.go           # Browser launching utility
+└── Makefile                     # Build targets
 ```
 
 ## Architecture
 
-The app uses the Bubble Tea architecture with custom components:
+The app uses the Bubble Tea architecture with organized internal packages:
 
-- **List Component** (`internals/list.go`) - Manages PR list navigation and rendering
-- **Detail Component** (`internals/detail.go`) - Displays selected PR details
-- **API Client** (`client.go`) - Handles Bitbucket REST API calls
-- **Config** (`config.go`) - Loads and validates environment variables
+- **API Package** (`internal/api/`) - Handles Bitbucket REST API calls and data models
+- **UI Package** (`internal/ui/`) - Manages PR list navigation and detail rendering
+- **Config Package** (`internal/config/`) - Loads and validates environment variables
+- **Utils Package** (`internal/utils/`) - Helper utilities (browser launcher)
 
 ## Layout
 

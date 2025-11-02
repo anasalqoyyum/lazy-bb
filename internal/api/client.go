@@ -34,8 +34,8 @@ func (c *Client) FetchPRs() ([]PR, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set up Basic Auth with API token
-	req.SetBasicAuth("x-token-auth", c.apiToken)
+	// Set up Bearer token authentication
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiToken))
 	req.Header.Set("Accept", "application/json")
 
 	client := &http.Client{}
