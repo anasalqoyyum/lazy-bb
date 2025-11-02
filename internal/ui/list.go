@@ -114,14 +114,15 @@ func (p *PRList) View() string {
 
 	// Column widths
 	colPR := 5      // PR#
-	colTitle := 25  // Title
+	colTitle := 40  // Title
 	colAuthor := 15 // Author
 	colState := 10  // State
-	colRepo := 15   // Workspace/Repo
+	colRepo := 40   // Workspace/Repo
 
 	// Calculate available width and adjust columns
-	totalFixedWidth := colPR + colTitle + colAuthor + colState + colRepo + 10 // +10 for spacing/borders
-	availableWidth := p.Width - 4                                             // -4 for padding and border
+	separatorWidth := 10 // " │ " between columns (3 chars * 4 separators - 2 for border)
+	totalFixedWidth := colPR + colTitle + colAuthor + colState + colRepo + separatorWidth
+	availableWidth := p.Width - 4 // -4 for padding and border
 
 	if availableWidth < totalFixedWidth {
 		// Scale down columns proportionally
@@ -137,15 +138,15 @@ func (p *PRList) View() string {
 		Foreground(lipgloss.Color("255")).
 		Background(lipgloss.Color("63"))
 
-	// Build header
-	header := fmt.Sprintf("%s │ %s │ %s │ %s │ %s",
+	// Build header (apply style after building plain text)
+	headerText := fmt.Sprintf("%s │ %s │ %s │ %s │ %s",
 		padString("PR#", colPR),
 		padString("Title", colTitle),
 		padString("Author", colAuthor),
 		padString("State", colState),
 		padString("Workspace/Repo", colRepo),
 	)
-	header = headerStyle.Render(header)
+	header := headerStyle.Render(headerText)
 
 	// Build rows
 	var rows []string
@@ -156,53 +157,58 @@ func (p *PRList) View() string {
 			break
 		}
 
-		// Format columns
+		// Format columns (plain text first)
 		prNum := fmt.Sprintf("%d", pr.ID)
 		title := truncateString(pr.Title, colTitle-2)
 		author := truncateString(pr.Author, colAuthor-2)
 
-		// State badge
-		stateStyle := lipgloss.NewStyle()
+		// State - determine color but don't apply yet
+		var stateColor string
 		switch pr.State {
 		case "OPEN":
-			stateStyle = stateStyle.Foreground(lipgloss.Color("42")) // Green
+			stateColor = "42" // Green
 		case "MERGED":
-			stateStyle = stateStyle.Foreground(lipgloss.Color("99")) // Purple
+			stateColor = "99" // Purple
 		case "DECLINED":
-			stateStyle = stateStyle.Foreground(lipgloss.Color("196")) // Red
+			stateColor = "196" // Red
 		default:
-			stateStyle = stateStyle.Foreground(lipgloss.Color("250")) // Gray
+			stateColor = "250" // Gray
 		}
-		state := stateStyle.Render(pr.State)
 
 		// Repo info
 		repo := fmt.Sprintf("%s/%s", pr.Workspace, pr.Repo)
 		repo = truncateString(repo, colRepo-2)
 
-		// Build row
-		row := fmt.Sprintf("%s │ %s │ %s │ %s │ %s",
+		// Build row with plain text (apply styling after padding)
+		rowText := fmt.Sprintf("%s │ %s │ %s │ %s │ %s",
 			padString(prNum, colPR),
 			padString(title, colTitle),
 			padString(author, colAuthor),
-			padString(state, colState),
+			padString(pr.State, colState),
 			padString(repo, colRepo),
 		)
 
-		// Highlight selected row
+		// Now apply styling
 		if i == p.Cursor {
-			row = lipgloss.NewStyle().
+			// Highlight selected row with background
+			rowText = lipgloss.NewStyle().
 				Background(lipgloss.Color("33")).
 				Foreground(lipgloss.Color("255")).
-				Render(row)
+				Render(rowText)
+		} else {
+			// Apply state color styling only to the state column in non-selected rows
+			stateStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(stateColor))
+			stateStyled := stateStyle.Render(pr.State)
+			// Replace the uncolored state with the colored one
+			rowText = strings.Replace(rowText, pr.State, stateStyled, 1)
 		}
 
-		rows = append(rows, row)
+		rows = append(rows, rowText)
 	}
 
 	// Separator line
-	separator := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(
-		strings.Repeat("─", availableWidth),
-	)
+	separatorText := strings.Repeat("─", availableWidth)
+	separator := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(separatorText)
 
 	// Build output
 	var output strings.Builder
