@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -28,6 +30,32 @@ func (p *PRDetail) SetPR(pr *PR) {
 	p.PR = pr
 }
 
+// renderMarkdown renders markdown content using glamour (glow's library)
+func (p *PRDetail) renderMarkdown(content string) string {
+	if content == "" {
+		return ""
+	}
+
+	// Create a glamour renderer with dark mode
+	renderer, err := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(p.Width-4),
+	)
+	if err != nil {
+		// Fallback to plain text if markdown rendering fails
+		return content
+	}
+
+	rendered, err := renderer.Render(content)
+	if err != nil {
+		// Fallback to plain text if markdown rendering fails
+		return content
+	}
+
+	// Remove trailing newlines added by glamour
+	return strings.TrimRight(rendered, "\n")
+}
+
 // View renders the PR details
 func (p *PRDetail) View() string {
 	if p.PR == nil {
@@ -41,7 +69,7 @@ func (p *PRDetail) View() string {
 	}
 
 	// Build detail view
-	var details strings.Builder
+	var details bytes.Buffer
 
 	// Title
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("87"))
@@ -66,17 +94,22 @@ func (p *PRDetail) View() string {
 	details.WriteString(titleStyle.Render("Author\n"))
 	details.WriteString(fmt.Sprintf("  %s\n\n", p.PR.Author))
 
+	// Repository
+	if p.PR.Workspace != "" && p.PR.Repo != "" {
+		details.WriteString(titleStyle.Render("Repository\n"))
+		details.WriteString(fmt.Sprintf("  %s/%s\n\n", p.PR.Workspace, p.PR.Repo))
+	}
+
 	// Created/Updated
 	details.WriteString(titleStyle.Render("Dates\n"))
 	details.WriteString(fmt.Sprintf("  Created: %s\n", p.PR.CreatedOn))
 	details.WriteString(fmt.Sprintf("  Updated: %s\n\n", p.PR.UpdatedOn))
 
-	// Description
+	// Description with markdown rendering
 	if p.PR.Description != "" {
 		details.WriteString(titleStyle.Render("Description\n"))
-		// Wrap description to fit width
-		wrapped := wrapText(p.PR.Description, p.Width-4)
-		details.WriteString(fmt.Sprintf("  %s\n\n", wrapped))
+		renderedDesc := p.renderMarkdown(p.PR.Description)
+		details.WriteString(fmt.Sprintf("  %s\n\n", renderedDesc))
 	}
 
 	// Link
@@ -84,36 +117,52 @@ func (p *PRDetail) View() string {
 	linkStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("33")).Underline(true)
 	details.WriteString(linkStyle.Render(fmt.Sprintf("  %s\n", p.PR.Links.HTML.Href)))
 
+	// Get the rendered content
+	content := details.String()
+
+	// Wrap content to fit within available width
+	wrappedContent := wrapContent(content, p.Width-4)
+
 	return lipgloss.NewStyle().
 		Width(p.Width).
 		Height(p.Height).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("63")).
 		Padding(1, 2).
-		Render(details.String())
+		Render(wrappedContent)
 }
 
-// wrapText wraps text to a given width
-func wrapText(text string, width int) string {
-	words := strings.Fields(text)
-	var lines []string
-	var currentLine []string
-	currentLength := 0
+// wrapContent wraps text content to fit within a given width
+// while preserving existing line breaks and handling multi-line segments
+func wrapContent(content string, width int) string {
+	lines := strings.Split(content, "\n")
+	var wrapped []string
 
-	for _, word := range words {
-		if currentLength+len(word)+1 > width && len(currentLine) > 0 {
-			lines = append(lines, strings.Join(currentLine, " "))
-			currentLine = []string{word}
-			currentLength = len(word)
+	for _, line := range lines {
+		if len(line) <= width {
+			wrapped = append(wrapped, line)
 		} else {
-			currentLine = append(currentLine, word)
-			currentLength += len(word) + 1
+			// Wrap long lines
+			words := strings.Fields(line)
+			var currentLine []string
+			currentLength := 0
+
+			for _, word := range words {
+				if currentLength+len(word)+1 > width && len(currentLine) > 0 {
+					wrapped = append(wrapped, strings.Join(currentLine, " "))
+					currentLine = []string{word}
+					currentLength = len(word)
+				} else {
+					currentLine = append(currentLine, word)
+					currentLength += len(word) + 1
+				}
+			}
+
+			if len(currentLine) > 0 {
+				wrapped = append(wrapped, strings.Join(currentLine, " "))
+			}
 		}
 	}
 
-	if len(currentLine) > 0 {
-		lines = append(lines, strings.Join(currentLine, " "))
-	}
-
-	return strings.Join(lines, "\n  ")
+	return strings.Join(wrapped, "\n")
 }

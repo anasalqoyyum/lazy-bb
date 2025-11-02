@@ -4,11 +4,12 @@ A terminal user interface (TUI) for browsing Bitbucket pull requests built with 
 
 ## Features
 
-- **List all pull requests** - Displays PRs from your Bitbucket repository
+- **List all pull requests** - Displays PRs from your Bitbucket repository in a table format
 - **Navigate with arrow keys** - Smooth up/down navigation through the PR list
-- **Side-by-side view** - PR list on the left, detailed view on the right
+- **Full-screen layout** - 50:50 side-by-side view with PR table on left, details on right
 - **Color-coded status** - Visual indicators for PR states (OPEN, MERGED, DECLINED)
 - **Open in browser** - Press Enter to open PR in your default browser
+- **Rich markdown rendering** - Description formatted with glow for better readability
 - **Basic auth** - Secure Bitbucket API access with email and app password
 
 ## Setup
@@ -73,6 +74,16 @@ lazy-bb
 | `Enter`              | Open PR in default browser |
 | `q`, `Esc`, `Ctrl+C` | Quit application           |
 
+## Rendering
+
+### Markdown Support
+
+PR descriptions are rendered as formatted markdown using [Glow](https://github.com/charmbracelet/glow):
+- Syntax highlighting for code blocks
+- Proper formatting for lists, bold, italic, etc.
+- Automatic word wrapping to fit terminal width
+- Fallback to plain text if markdown parsing fails
+
 ## Project Structure
 
 ```
@@ -105,33 +116,43 @@ The app uses the Bubble Tea architecture with organized internal packages:
 
 ## Layout
 
+The TUI uses a full-screen 50:50 split layout:
+
 ```
-┌────────────────────────────────────────────────────────────┐
-│ #1   feat: Add new feature                    [OPEN]       │
-│ #2   fix: Bug fix                             [MERGED]     │
-│ #3   chore: Update deps                       [DECLINED]   │ PR List
-│                                                             │
-│ [1/3] Use ↑↓ to navigate, Enter to open, q to quit        │
-├──────────────────────────┬──────────────────────────────────┤
-│ Title                    │ Title                             │
-│   feat: Add new feature  │ PR #1 - [OPEN]                   │
-│                          │                                   │
-│ Author                   │ Author                            │
-│   John Doe               │ John Doe                          │
-│                          │                                   │
-│ Dates                    │ Dates                             │
-│   Created: 2024-01-15    │ Created: 2024-01-15 10:30        │
-│   Updated: 2024-01-16    │ Updated: 2024-01-16 14:45        │
-│                          │                                   │
-│ Description              │ Description                       │
-│   This PR adds...        │ This PR implements the new        │
-│                          │ feature requested in the issue.   │
-│ Link                     │ It also refactors...              │
-│   [bitbucket.org/...]    │                                   │
-│                          │ Link                              │
-│                          │ https://bitbucket.org/...         │
-└──────────────────────────┴──────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ PR# │ Title                  │ Author       │ State   │ Workspace/Repo       │
+├─────┼────────────────────────┼──────────────┼─────────┼──────────────────────┤
+│ #1  │ feat: Add new feature  │ John Doe     │ OPEN    │ my-workspace/my-repo │ PR List (50%)
+│ #2  │ fix: Bug fix           │ Jane Smith   │ MERGED  │ my-workspace/my-repo │
+│ #3  │ chore: Update deps     │ Bob Johnson  │ DECLINED│ my-workspace/my-repo │
+│ [1/3] Use ↑↓ to navigate, Enter to open, q to quit                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Title                                                                         │
+│   feat: Add new feature                                                      │
+│                                                                               │
+│ PR #1 - OPEN                                                                 │
+│                                                                               │ PR Details (50%)
+│ Author                                                                        │
+│   John Doe                                                                   │
+│                                                                               │
+│ Repository                                                                    │
+│   my-workspace/my-repo                                                       │
+│                                                                               │
+│ Description (rendered as markdown)                                            │
+│   This PR adds the new feature...                                            │
+│                                                                               │
+│ Link                                                                          │
+│   https://bitbucket.org/...                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Features:**
+- **PR Table Columns**: PR# | Title | Author | State | Workspace/Repo
+- **Color-coded States**: Green (OPEN), Purple (MERGED), Red (DECLINED)
+- **Responsive Design**: Automatically adapts to terminal width/height
+- **Selected Row Highlight**: Blue background on current selection
+- **Markdown Rendering**: PR descriptions are formatted with syntax highlighting
+- **Full Terminal Utilization**: Maximizes available screen space
 
 ## Dependencies
 

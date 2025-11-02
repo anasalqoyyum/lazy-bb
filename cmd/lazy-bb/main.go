@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -60,13 +61,17 @@ func initialModel() model {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
+	// Use default sizes, will be updated on first WindowSizeMsg
+	halfWidth := 90
+	height := 30
+
 	return model{
 		spinner:  s,
 		loading:  true,
-		prList:   ui.NewPRList(30, 30),
-		prDetail: ui.NewPRDetail(60, 30),
-		width:    90,
-		height:   30,
+		prList:   ui.NewPRList(halfWidth, height),
+		prDetail: ui.NewPRDetail(halfWidth, height),
+		width:    halfWidth * 2,
+		height:   height,
 	}
 }
 
@@ -95,6 +100,17 @@ func fetchPRsCmd(client *api.Client) tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		// Split width 50:50 between list and detail
+		halfWidth := (msg.Width - 2) / 2 // -2 for border
+		m.prList.Width = halfWidth
+		m.prDetail.Width = halfWidth
+		m.prList.Height = msg.Height - 2 // -2 for border
+		m.prDetail.Height = msg.Height - 2
+		return m, nil
 
 	case tea.KeyMsg:
 		if key.Matches(msg, quitKeys) {
@@ -143,6 +159,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if authorName == "" {
 				authorName = pr.Author.Username
 			}
+
+			// Extract workspace and repo from full_name (format: workspace/repo)
+			workspace := ""
+			repo := ""
+			if pr.Source.Repository.FullName != "" {
+				parts := strings.Split(pr.Source.Repository.FullName, "/")
+				if len(parts) >= 2 {
+					workspace = parts[0]
+					repo = parts[1]
+				}
+			}
+
 			internalPRs[i] = ui.PR{
 				ID:          pr.ID,
 				Title:       pr.Title,
@@ -151,6 +179,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				State:       pr.State,
 				CreatedOn:   pr.CreatedOn.Format("2006-01-02 15:04"),
 				UpdatedOn:   pr.UpdatedOn.Format("2006-01-02 15:04"),
+				Workspace:   workspace,
+				Repo:        repo,
 				Links: ui.Links{
 					HTML: ui.HTML{
 						Href: pr.Links.HTML.Href,
