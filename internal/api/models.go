@@ -53,8 +53,10 @@ type Repo struct {
 
 // PRListResponse is the response from Bitbucket API
 type PRListResponse struct {
-	Pagelen int  `json:"pagelen"`
-	Page    int  `json:"page"`
-	Size    int  `json:"size"`
-	Values  []PR `json:"values"`
+	Pagelen  int    `json:"pagelen"`
+	Page     int    `json:"page"`
+	Size     int    `json:"size"`
+	Next     string `json:"next"`
+	Previous string `json:"previous"`
+	Values   []PR   `json:"values"`
 }

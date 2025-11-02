@@ -47,10 +47,7 @@ func (p *PRDetail) ScrollDown() {
 	// Calculate if we can scroll down by checking if there's more content
 	totalLines := p.calculateTotalLines()
 	maxLines := p.Height - 4
-	maxScroll := totalLines - maxLines
-	if maxScroll < 0 {
-		maxScroll = 0
-	}
+	maxScroll := max(totalLines-maxLines, 0)
 	if p.ScrollOffset < maxScroll {
 		p.ScrollOffset++
 	}
@@ -72,10 +69,7 @@ func (p *PRDetail) ScrollDownHalf() {
 	// Calculate if we can scroll down by checking if there's more content
 	totalLines := p.calculateTotalLines()
 	maxLines := p.Height - 4
-	maxScroll := totalLines - maxLines
-	if maxScroll < 0 {
-		maxScroll = 0
-	}
+	maxScroll := max(totalLines-maxLines, 0)
 	newOffset := p.ScrollOffset + halfPage
 	if newOffset > maxScroll {
 		p.ScrollOffset = maxScroll
@@ -245,10 +239,7 @@ func (p *PRDetail) View() string {
 	// Apply scroll offset
 	startLine := p.ScrollOffset
 	if startLine >= len(contentLines) {
-		startLine = len(contentLines) - maxLines
-		if startLine < 0 {
-			startLine = 0
-		}
+		startLine = max(len(contentLines)-maxLines, 0)
 	}
 
 	var displayLines []string

@@ -5,12 +5,9 @@ A terminal user interface (TUI) for browsing Bitbucket pull requests built with 
 ## Features
 
 - **List all pull requests** - Displays PRs from your Bitbucket repository in a table format
-- **Navigate with arrow keys** - Smooth up/down navigation through the PR list
-- **Full-screen layout** - 50:50 side-by-side view with PR table on left, details on right
 - **Color-coded status** - Visual indicators for PR states (OPEN, MERGED, DECLINED)
 - **Open in browser** - Press Enter to open PR in your default browser
 - **Rich markdown rendering** - Description formatted with glow for better readability
-- **Basic auth** - Secure Bitbucket API access with email and app password
 
 ## Setup
 
@@ -51,10 +48,10 @@ The app will automatically load from `.env` if it exists.
 
 **Getting your Bitbucket app password:**
 
-1. Go to <https://bitbucket.org/account/settings/app-passwords/>
+1. Go to <https://id.atlassian.com/manage-profile/security/api-tokens>
 2. Click "Create app password"
-3. Give it a name and select at least "pullrequest:read" scope
-4. Copy the generated password and use it as your `BITBUCKET_TOKEN`
+3. Give it a name and select at least "read:repository:bitbucket" scope
+4. Copy the generated token and use it as your `BITBUCKET_TOKEN`
 5. Use your Bitbucket email address as `BITBUCKET_EMAIL`
 
 ## Usage
@@ -78,7 +75,8 @@ lazy-bb
 
 ### Markdown Support
 
-PR descriptions are rendered as formatted markdown using [Glow](https://github.com/charmbracelet/glow):
+PR descriptions are rendered as formatted markdown using [Glamour](https://github.com/charmbracelet/glamour):
+
 - Syntax highlighting for code blocks
 - Proper formatting for lists, bold, italic, etc.
 - Automatic word wrapping to fit terminal width
@@ -147,6 +145,7 @@ The TUI uses a full-screen 50:50 split layout:
 ```
 
 **Features:**
+
 - **PR Table Columns**: PR# | Title | Author | State | Workspace/Repo
 - **Color-coded States**: Green (OPEN), Purple (MERGED), Red (DECLINED)
 - **Responsive Design**: Automatically adapts to terminal width/height
@@ -159,13 +158,14 @@ The TUI uses a full-screen 50:50 split layout:
 - `github.com/charmbracelet/bubbles` - Reusable components
 - `github.com/charmbracelet/bubbletea` - TUI framework
 - `github.com/charmbracelet/lipgloss` - Styling and layout
+- `github.com/charmbracelet/glamour` - Markdown rendering
 
 ## Notes
 
 - PR list auto-loads on startup
 - Cursor position is reset when switching repositories
 - Browser opening may require OS-specific setup on headless servers
-- Bitbucket API pagination is handled automatically (first 30 PRs by default)
+- Bitbucket API pagination is not handled yet (first 30 PRs by default)
 
 ## Troubleshooting
 
@@ -183,4 +183,4 @@ The TUI uses a full-screen 50:50 split layout:
 - On Linux, ensure `xdg-open` is installed
 - On macOS, ensure `open` command is available
 - On Windows, ensure `rundll32` is available
-- as a note, only tested on WSL and macOS
+- As a note, only tested on WSL and macOS
