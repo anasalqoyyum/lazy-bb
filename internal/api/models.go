@@ -60,3 +60,20 @@ type PRListResponse struct {
 	Previous string `json:"previous"`
 	Values   []PR   `json:"values"`
 }
+
+// Repository represents a Bitbucket repository
+type Repository struct {
+	Slug  string `json:"slug"`
+	Name  string `json:"name"`
+	Links Links  `json:"links"`
+}
+
+// RepositoryListResponse is the response from Bitbucket repositories API
+type RepositoryListResponse struct {
+	Pagelen  int          `json:"pagelen"`
+	Page     int          `json:"page"`
+	Size     int          `json:"size"`
+	Next     string       `json:"next"`
+	Previous string       `json:"previous"`
+	Values   []Repository `json:"values"`
+}

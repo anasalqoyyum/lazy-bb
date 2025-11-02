@@ -15,7 +15,7 @@ A terminal user interface (TUI) for browsing Bitbucket pull requests built with 
 
 - Go 1.24+
 - Bitbucket email address
-- Bitbucket app password
+- Bitbucket app token
 
 ### Installation
 
@@ -29,7 +29,7 @@ Set the following environment variables:
 
 ```bash
 export BITBUCKET_EMAIL=your_bitbucket_email@example.com
-export BITBUCKET_TOKEN=your_app_password_here
+export BITBUCKET_TOKEN=your_api_token_here
 export BITBUCKET_WORKSPACE=your_workspace
 export BITBUCKET_REPO=your_repository
 ```
@@ -39,18 +39,18 @@ export BITBUCKET_REPO=your_repository
 ```bash
 # .env
 BITBUCKET_EMAIL=your_bitbucket_email@example.com
-BITBUCKET_TOKEN=your_app_password_here
+BITBUCKET_TOKEN=your_api_token_here
 BITBUCKET_WORKSPACE=your_workspace
 BITBUCKET_REPO=your_repository
 ```
 
 The app will automatically load from `.env` if it exists.
 
-**Getting your Bitbucket app password:**
+**Getting your Bitbucket API token:**
 
 1. Go to <https://id.atlassian.com/manage-profile/security/api-tokens>
-2. Click "Create app password"
-3. Give it a name and select at least "read:repository:bitbucket" scope
+2. Click "Create API Token"
+3. Give it a name and select at least "read:repository:bitbucket" and "read:repository:bitbucket" scope
 4. Copy the generated token and use it as your `BITBUCKET_TOKEN`
 5. Use your Bitbucket email address as `BITBUCKET_EMAIL`
 
@@ -123,23 +123,23 @@ The TUI uses a full-screen 50:50 split layout:
 │ #1  │ feat: Add new feature  │ John Doe     │ OPEN    │ my-workspace/my-repo │ PR List (50%)
 │ #2  │ fix: Bug fix           │ Jane Smith   │ MERGED  │ my-workspace/my-repo │
 │ #3  │ chore: Update deps     │ Bob Johnson  │ DECLINED│ my-workspace/my-repo │
-│ [1/3] Use ↑↓ to navigate, Enter to open, q to quit                          │
+│ [1/3] Use ↑↓ to navigate, Enter to open, q to quit                           │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ Title                                                                         │
+│ Title                                                                        │
 │   feat: Add new feature                                                      │
-│                                                                               │
+│                                                                              │
 │ PR #1 - OPEN                                                                 │
-│                                                                               │ PR Details (50%)
-│ Author                                                                        │
+│                                                                              │ PR Details (50%)
+│ Author                                                                       │
 │   John Doe                                                                   │
-│                                                                               │
-│ Repository                                                                    │
+│                                                                              │
+│ Repository                                                                   │
 │   my-workspace/my-repo                                                       │
-│                                                                               │
-│ Description (rendered as markdown)                                            │
+│                                                                              │
+│ Description (rendered as markdown)                                           │
 │   This PR adds the new feature...                                            │
-│                                                                               │
-│ Link                                                                          │
+│                                                                              │
+│ Link                                                                         │
 │   https://bitbucket.org/...                                                  │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -175,8 +175,8 @@ The TUI uses a full-screen 50:50 split layout:
 
 **"API returned status 401"**
 
-- Check your email and app password are correct
-- Verify the app password has "pullrequest:read" permissions
+- Check your email and API token are correct
+- Verify the API token has correct scopes permissions
 
 **"failed to open browser"**
 
