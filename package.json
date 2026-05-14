@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/react": "^19.2.14",
     "oxfmt": "^0.49.0",
     "oxlint": "^1.64.0",
     "typescript": "latest"
