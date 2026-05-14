@@ -1,5 +1,5 @@
 import { useKeyboard, useRenderer, useTerminalDimensions } from '@opentui/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BitbucketClient, BitbucketHttpError, type NetworkRequestLog } from '../bitbucket/client'
 import type { PullRequest, PullRequestDetail } from '../bitbucket/models'
 import type { AppConfig } from '../config'
@@ -53,6 +53,8 @@ export function App({ config }: Props) {
     prDetails: {},
     networkRequests: []
   })
+
+  const loadRequestId = useRef(0)
 
   const [client] = useState(
     () =>
@@ -184,6 +186,7 @@ export function App({ config }: Props) {
   })
 
   async function loadPullRequests(tab: PrTab, options: { refresh?: boolean } = {}) {
+    const requestId = ++loadRequestId.current
     const repoSlugs = currentRepoSlugs()
     const label = tabLabel(tab, repoSlugs)
     setState(current => ({
@@ -197,37 +200,49 @@ export function App({ config }: Props) {
     }))
     try {
       const prs = await loadTabPullRequests(tab, repoSlugs, options)
-      setState(current => ({
-        ...current,
-        prs,
-        selectedPrIndex: 0,
-        detailScroll: 0,
-        loadingPrs: false,
-        focus: 'prs',
-        status:
-          prs.length === 0
-            ? `No ${config.pullRequestState.toLowerCase()} ${label}`
-            : `Loaded ${prs.length} ${config.pullRequestState.toLowerCase()} PRs`
-      }))
+      setState(current => {
+        if (requestId !== loadRequestId.current || current.tab !== tab) return current
+
+        return {
+          ...current,
+          prs,
+          selectedPrIndex: 0,
+          detailScroll: 0,
+          loadingPrs: false,
+          focus: 'prs',
+          status:
+            prs.length === 0
+              ? `No ${config.pullRequestState.toLowerCase()} ${label}`
+              : `Loaded ${prs.length} ${config.pullRequestState.toLowerCase()} PRs`
+        }
+      })
     } catch (error) {
       if (error instanceof BitbucketHttpError && error.status === 404) {
-        setState(current => ({
-          ...current,
-          prs: [],
-          selectedPrIndex: 0,
-          loadingPrs: false,
-          error: undefined,
-          status: tab === 'mine' ? 'No pull requests found for this account' : `No pull requests found for ${label}`
-        }))
+        setState(current => {
+          if (requestId !== loadRequestId.current || current.tab !== tab) return current
+
+          return {
+            ...current,
+            prs: [],
+            selectedPrIndex: 0,
+            loadingPrs: false,
+            error: undefined,
+            status: tab === 'mine' ? 'No pull requests found for this account' : `No pull requests found for ${label}`
+          }
+        })
         return
       }
 
-      setState(current => ({
-        ...current,
-        loadingPrs: false,
-        error: errorMessage(error),
-        status: 'Pull request load failed'
-      }))
+      setState(current => {
+        if (requestId !== loadRequestId.current || current.tab !== tab) return current
+
+        return {
+          ...current,
+          loadingPrs: false,
+          error: errorMessage(error),
+          status: 'Pull request load failed'
+        }
+      })
     }
   }
 
@@ -411,6 +426,16 @@ export function App({ config }: Props) {
   }
 
   function refresh() {
+    if (selectedPr) {
+      const key = detailKey(selectedPr)
+      setState(current => {
+        const prDetails = { ...current.prDetails }
+        delete prDetails[key]
+        return { ...current, prDetails }
+      })
+      void loadPullRequestDetail(selectedPr, { refresh: true })
+    }
+
     void loadPullRequests(state.tab, { refresh: true })
   }
 
