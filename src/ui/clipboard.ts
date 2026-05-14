@@ -1,4 +1,9 @@
-export function copyToClipboard(text: string): boolean {
+export function copyToClipboard(text: string, renderer?: { isOsc52Supported(): boolean; copyToClipboardOSC52(text: string): boolean }): boolean {
+  if (renderer?.isOsc52Supported()) {
+    renderer.copyToClipboardOSC52(text)
+    return true
+  }
+
   const command = clipboardCommand()
   if (!command) return false
 

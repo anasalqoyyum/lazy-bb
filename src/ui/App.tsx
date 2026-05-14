@@ -93,6 +93,15 @@ export function App({ config }: Props) {
   }, [])
 
   useEffect(() => {
+    const handler = (selection: { getSelectedText(): string }) => {
+      const text = selection.getSelectedText()
+      if (text) copyToClipboard(text, renderer)
+    }
+    renderer.on('selection', handler)
+    return () => { renderer.off('selection', handler) }
+  }, [])
+
+  useEffect(() => {
     if (!selectedPr || !state.detailPaneVisible) return
     void loadPullRequestDetail(selectedPr)
   }, [selectedPr?.id, repoName(selectedPr), state.detailPaneVisible])
@@ -431,15 +440,17 @@ export function App({ config }: Props) {
   }
 
   function scrollDetail(delta: number) {
+    const max = maxDetailScroll(selectedPr, selectedDetail, state.loadingDetailKey, state.detailErrorKey, state.detailError, state.detailTab, height)
     setState(current => ({
       ...current,
-      detailScroll: clamp(current.detailScroll + delta, 0, maxDetailScroll(selectedPr, height)),
+      detailScroll: clamp(current.detailScroll + delta, 0, max),
       pendingG: false
     }))
   }
 
   function scrollDetailToEnd() {
-    setState(current => ({ ...current, detailScroll: maxDetailScroll(selectedPr, height), pendingG: false }))
+    const max = maxDetailScroll(selectedPr, selectedDetail, state.loadingDetailKey, state.detailErrorKey, state.detailError, state.detailTab, height)
+    setState(current => ({ ...current, detailScroll: max, pendingG: false }))
   }
 
   function setFocus(focus: FocusPane) {
@@ -466,7 +477,7 @@ export function App({ config }: Props) {
   function yankSelectedPr() {
     if (!selectedPr) return
     const text = selectedPr.links?.html?.href || `#${selectedPr.id} ${selectedPr.title}`
-    const copied = copyToClipboard(text)
+    const copied = copyToClipboard(text, renderer)
     setState(current => ({
       ...current,
       status: copied ? `Yanked ${text}` : 'No clipboard command found'

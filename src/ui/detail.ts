@@ -19,6 +19,22 @@ export function renderDetail(
 ): string {
   if (!pr) return '\nSelect a pull request'
 
+  const lines = buildDetailLines(pr, detail, loadingDetailKey, detailErrorKey, detailError, tab)
+  const maxScroll = Math.max(0, lines.length - visibleLines)
+  const safeScroll = clamp(scroll, 0, maxScroll)
+  const marker = maxScroll > 0 ? `  [${safeScroll + 1}-${Math.min(lines.length, safeScroll + visibleLines)}/${lines.length}]` : ''
+
+  return [...lines.slice(safeScroll, safeScroll + visibleLines), marker].join('\n')
+}
+
+function buildDetailLines(
+  pr: PullRequest,
+  detail: PullRequestDetail | undefined,
+  loadingDetailKey: string | undefined,
+  detailErrorKey: string | undefined,
+  detailError: string | undefined,
+  tab: DetailTab
+): string[] {
   const key = detailKey(pr)
   const loading = loadingDetailKey === key
   const fullPr = detail?.pr ?? pr
@@ -29,7 +45,7 @@ export function renderDetail(
   const status = aggregateStatus(detail?.statuses ?? [])
   const errorLine = detailErrorKey === key && detailError ? `Detail load failed: ${detailError}` : ''
 
-  const lines = [
+  return [
     `#${fullPr.id} ${fullPr.title}`,
     `${icons.user} by ${author}  ·  Updated: ${formatDate(fullPr.updated_on)}`,
     '',
@@ -42,11 +58,6 @@ export function renderDetail(
     '',
     ...renderTabContent(tab, fullPr, detail, description, loading)
   ].filter(line => line !== undefined)
-  const maxScroll = Math.max(0, lines.length - visibleLines)
-  const safeScroll = clamp(scroll, 0, maxScroll)
-  const marker = maxScroll > 0 ? `  [${safeScroll + 1}-${Math.min(lines.length, safeScroll + visibleLines)}/${lines.length}]` : ''
-
-  return [...lines.slice(safeScroll, safeScroll + visibleLines), marker].join('\n')
 }
 
 export function detailVisibleLines(height: number, debug: boolean, networkRequestCount: number): number {
@@ -54,10 +65,18 @@ export function detailVisibleLines(height: number, debug: boolean, networkReques
   return Math.max(4, height - debugHeight - 10)
 }
 
-export function maxDetailScroll(pr: PullRequest | undefined, height: number): number {
+export function maxDetailScroll(
+  pr: PullRequest | undefined,
+  detail: PullRequestDetail | undefined,
+  loadingDetailKey: string | undefined,
+  detailErrorKey: string | undefined,
+  detailError: string | undefined,
+  tab: DetailTab,
+  height: number
+): number {
   if (!pr) return 0
-  const descriptionLines = (pr.description?.trim() || 'No description').split('\n').length
-  return Math.max(0, 80 + descriptionLines - detailVisibleLines(height, false, 0))
+  const lines = buildDetailLines(pr, detail, loadingDetailKey, detailErrorKey, detailError, tab)
+  return Math.max(0, lines.length - detailVisibleLines(height, false, 0))
 }
 
 function renderTabs(tab: DetailTab, detail: PullRequestDetail | undefined, pr: PullRequest): string {
@@ -148,7 +167,7 @@ function statusLabel(state: string): string {
 function renderActivity(detail: PullRequestDetail | undefined, loading: boolean): string[] {
   if (!detail) return [loading ? '⠋ Loading activity…' : 'No activity loaded yet']
   if (detail.activity.length === 0) return ['No activity']
-  return detail.activity.slice(0, 14).map(item => {
+  return detail.activity.map(item => {
     if (item.approval) return `${formatDate(item.approval.date)} ${displayAccount(item.approval.user)} approved`
     if (item.comment) return `${formatDate(item.comment.created_on)} ${displayAccount(item.comment.user)} commented`
     if (item.update)
@@ -160,7 +179,7 @@ function renderActivity(detail: PullRequestDetail | undefined, loading: boolean)
 function renderComments(detail: PullRequestDetail | undefined, loading: boolean): string[] {
   if (!detail) return [loading ? '⠋ Loading comments…' : 'No comments loaded yet']
   if (detail.comments.length === 0) return ['No comments']
-  return detail.comments.slice(0, 10).flatMap(comment => {
+  return detail.comments.flatMap(comment => {
     const location = comment.inline?.path ? ` (${comment.inline.path}:${comment.inline.to ?? comment.inline.from ?? ''})` : ''
     const body = comment.deleted ? '[deleted]' : comment.content?.raw?.trim() || 'No content'
     return [
@@ -176,13 +195,13 @@ function renderComments(detail: PullRequestDetail | undefined, loading: boolean)
 function renderCommits(detail: PullRequestDetail | undefined, loading: boolean): string[] {
   if (!detail) return [loading ? '⠋ Loading commits…' : 'No commits loaded yet']
   if (detail.commits.length === 0) return ['No commits']
-  return detail.commits.slice(0, 16).map(commit => `${(commit.hash || '').slice(0, 12)} ${firstLine(commit.message)}`)
+  return detail.commits.map(commit => `${(commit.hash || '').slice(0, 12)} ${firstLine(commit.message)}`)
 }
 
 function renderChanges(detail: PullRequestDetail | undefined, loading: boolean): string[] {
   if (!detail) return [loading ? '⠋ Loading changes…' : 'No changes loaded yet']
   if (detail.diffstat.length === 0) return ['No changes']
-  return detail.diffstat.slice(0, 18).map(file => {
+  return detail.diffstat.map(file => {
     const path = file.new?.path || file.old?.path || 'unknown'
     return `${file.status ?? 'modified'} +${file.lines_added ?? 0} -${file.lines_removed ?? 0} ${path}`
   })
