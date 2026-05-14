@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "start": "bun src/main.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check ."
   },
   "dependencies": {
     "@opentui/core": "latest",
@@ -14,6 +17,8 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "oxfmt": "^0.49.0",
+    "oxlint": "^1.64.0",
     "typescript": "latest"
   }
 }

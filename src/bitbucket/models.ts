@@ -8,7 +8,7 @@ export type Links = {
   merge?: Link
   commits?: Link
   approve?: Link
-  "request-changes"?: Link
+  'request-changes'?: Link
   diff?: Link
   diffstat?: Link
   comments?: Link

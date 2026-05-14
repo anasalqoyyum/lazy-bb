@@ -55,18 +55,18 @@ export BKT_DEBUG="1"
 export LAZY_BB_NERD_FONT="1"
 ```
 
-| Variable | Description |
-| --- | --- |
-| `BKT_USER` | Bitbucket Basic Auth username/email |
-| `BKT_TOKEN` | Bitbucket API token |
-| `BKT_WORKSPACE` | Bitbucket Cloud workspace |
-| `BKT_REPO` | Optional default repository slug. Can be comma-separated |
-| `BKT_REPOS` | Optional comma-separated repository filter. When set, `lazy-bb` does not fetch the full repository list |
-| `BKT_FILTER` | Optional gh-dash-like filter: `workspace:team repo:repo-a,repo-b is:open` |
-| `BKT_PR_STATE` | Optional pull request state. Defaults to `OPEN` |
-| `BKT_CACHE_TTL` | Cache TTL in seconds. Defaults to `300`. Use `0` to disable caching |
-| `BKT_DEBUG` / `LAZY_BB_DEBUG` | Show network requests in a debug panel at the bottom of the TUI |
-| `LAZY_BB_NERD_FONT` | Optional icon override. `1` enables Nerd Font icons, `0` forces text fallback |
+| Variable                      | Description                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `BKT_USER`                    | Bitbucket Basic Auth username/email                                                                     |
+| `BKT_TOKEN`                   | Bitbucket API token                                                                                     |
+| `BKT_WORKSPACE`               | Bitbucket Cloud workspace                                                                               |
+| `BKT_REPO`                    | Optional default repository slug. Can be comma-separated                                                |
+| `BKT_REPOS`                   | Optional comma-separated repository filter. When set, `lazy-bb` does not fetch the full repository list |
+| `BKT_FILTER`                  | Optional gh-dash-like filter: `workspace:team repo:repo-a,repo-b is:open`                               |
+| `BKT_PR_STATE`                | Optional pull request state. Defaults to `OPEN`                                                         |
+| `BKT_CACHE_TTL`               | Cache TTL in seconds. Defaults to `300`. Use `0` to disable caching                                     |
+| `BKT_DEBUG` / `LAZY_BB_DEBUG` | Show network requests in a debug panel at the bottom of the TUI                                         |
+| `LAZY_BB_NERD_FONT`           | Optional icon override. `1` enables Nerd Font icons, `0` forces text fallback                           |
 
 You can also create a local `.env` file:
 
@@ -141,27 +141,27 @@ bunx tsc --noEmit
 
 ## Keybindings
 
-| Key | Action |
-| --- | --- |
-| `q` | Quit |
-| `esc` | Cancel search/help, or quit |
-| `ctrl+c` | Force quit |
-| `j` / `down` | Move down |
-| `k` / `up` | Move up |
-| `h` / `left` | Previous pane |
-| `l` / `right` | Next pane |
-| `gg` | Jump to top |
-| `G` | Jump to bottom |
-| `ctrl+d` | Half-page down |
-| `ctrl+u` | Half-page up |
-| `enter` | Select repo or open PR |
-| `o` | Open selected PR in browser |
-| `r` | Refresh and bypass cache |
-| `/` | Search/filter pull requests |
-| `?` | Show keybinding help in the status bar |
-| `1` | Focus repositories |
-| `2` | Focus pull requests |
-| `3` | Focus detail |
+| Key           | Action                                 |
+| ------------- | -------------------------------------- |
+| `q`           | Quit                                   |
+| `esc`         | Cancel search/help, or quit            |
+| `ctrl+c`      | Force quit                             |
+| `j` / `down`  | Move down                              |
+| `k` / `up`    | Move up                                |
+| `h` / `left`  | Previous pane                          |
+| `l` / `right` | Next pane                              |
+| `gg`          | Jump to top                            |
+| `G`           | Jump to bottom                         |
+| `ctrl+d`      | Half-page down                         |
+| `ctrl+u`      | Half-page up                           |
+| `enter`       | Select repo or open PR                 |
+| `o`           | Open selected PR in browser            |
+| `r`           | Refresh and bypass cache               |
+| `/`           | Search/filter pull requests            |
+| `?`           | Show keybinding help in the status bar |
+| `1`           | Focus repositories                     |
+| `2`           | Focus pull requests                    |
+| `3`           | Focus detail                           |
 
 ## Caching
 

@@ -1,12 +1,12 @@
-import { createCliRenderer } from "@opentui/core"
-import { createRoot } from "@opentui/react"
-import { loadConfig } from "./config"
-import { App } from "./ui/App"
-import { SetupError } from "./ui/SetupError"
+import { createCliRenderer } from '@opentui/core'
+import { createRoot } from '@opentui/react'
+import { loadConfig } from './config'
+import { App } from './ui/App'
+import { SetupError } from './ui/SetupError'
 
 const renderer = await createCliRenderer({
   exitOnCtrlC: true,
-  consoleMode: "disabled",
+  consoleMode: 'disabled'
 })
 
 const root = createRoot(renderer)

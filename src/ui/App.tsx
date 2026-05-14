@@ -1,10 +1,6 @@
 import { useKeyboard, useRenderer, useTerminalDimensions } from '@opentui/react'
 import { useEffect, useState } from 'react'
-import {
-  BitbucketClient,
-  BitbucketHttpError,
-  type NetworkRequestLog
-} from '../bitbucket/client'
+import { BitbucketClient, BitbucketHttpError, type NetworkRequestLog } from '../bitbucket/client'
 import type { PullRequest, PullRequestDetail } from '../bitbucket/models'
 import type { AppConfig } from '../config'
 import { openBrowser } from './browser'
@@ -60,18 +56,12 @@ export function App({ config }: Props) {
 
   const [client] = useState(
     () =>
-      new BitbucketClient(
-        config.user,
-        config.token,
-        config.workspace,
-        config.cacheTtlSeconds,
-        request => {
-          setState(current => ({
-            ...current,
-            networkRequests: [...current.networkRequests, request].slice(-8)
-          }))
-        }
-      )
+      new BitbucketClient(config.user, config.token, config.workspace, config.cacheTtlSeconds, request => {
+        setState(current => ({
+          ...current,
+          networkRequests: [...current.networkRequests, request].slice(-8)
+        }))
+      })
   )
   const filteredPrs = filterPrs(state.prs, state.search)
   const displayedPrs = flattenGroupedPrs(filteredPrs)
@@ -160,16 +150,16 @@ export function App({ config }: Props) {
         else jumpToEnd()
         break
       case 'd':
-        if (key.ctrl)
-          state.focus === 'detail'
-            ? scrollDetail(Math.max(5, Math.floor(height / 2)))
-            : page(1)
+        if (key.ctrl) {
+          if (state.focus === 'detail') scrollDetail(Math.max(5, Math.floor(height / 2)))
+          else page(1)
+        }
         break
       case 'u':
-        if (key.ctrl)
-          state.focus === 'detail'
-            ? scrollDetail(-Math.max(5, Math.floor(height / 2)))
-            : page(-1)
+        if (key.ctrl) {
+          if (state.focus === 'detail') scrollDetail(-Math.max(5, Math.floor(height / 2)))
+          else page(-1)
+        }
         break
       case 'return':
       case 'o':
@@ -193,10 +183,7 @@ export function App({ config }: Props) {
     }
   })
 
-  async function loadPullRequests(
-    tab: PrTab,
-    options: { refresh?: boolean } = {}
-  ) {
+  async function loadPullRequests(tab: PrTab, options: { refresh?: boolean } = {}) {
     const repoSlugs = currentRepoSlugs()
     const label = tabLabel(tab, repoSlugs)
     setState(current => ({
@@ -230,10 +217,7 @@ export function App({ config }: Props) {
           selectedPrIndex: 0,
           loadingPrs: false,
           error: undefined,
-          status:
-            tab === 'mine'
-              ? 'No pull requests found for this account'
-              : `No pull requests found for ${label}`
+          status: tab === 'mine' ? 'No pull requests found for this account' : `No pull requests found for ${label}`
         }))
         return
       }
@@ -247,25 +231,12 @@ export function App({ config }: Props) {
     }
   }
 
-  async function loadTabPullRequests(
-    tab: PrTab,
-    repoSlugs: string[],
-    options: { refresh?: boolean }
-  ): Promise<PullRequest[]> {
-    if (tab === 'mine')
-      return client.listMyPullRequests(
-        config.user,
-        config.pullRequestState,
-        options
-      )
+  async function loadTabPullRequests(tab: PrTab, repoSlugs: string[], options: { refresh?: boolean }): Promise<PullRequest[]> {
+    if (tab === 'mine') return client.listMyPullRequests(config.user, config.pullRequestState, options)
     if (tab === 'review' && repoSlugs.length === 0)
-      return (
-        await client.listPullRequestsNeedingReview(
-          currentUserIdentity(config),
-          config.pullRequestState,
-          options
-        )
-      ).sort(compareUpdatedDesc)
+      return (await client.listPullRequestsNeedingReview(currentUserIdentity(config), config.pullRequestState, options)).sort(
+        compareUpdatedDesc
+      )
 
     if (repoSlugs.length === 0) return []
 
@@ -273,20 +244,10 @@ export function App({ config }: Props) {
       repoSlugs.map(async slug => {
         try {
           if (tab === 'review')
-            return await client.listRepoPullRequestsNeedingReview(
-              slug,
-              currentUserIdentity(config),
-              config.pullRequestState,
-              options
-            )
-          return await client.listPullRequests(
-            slug,
-            config.pullRequestState,
-            options
-          )
+            return await client.listRepoPullRequestsNeedingReview(slug, currentUserIdentity(config), config.pullRequestState, options)
+          return await client.listPullRequests(slug, config.pullRequestState, options)
         } catch (error) {
-          if (error instanceof BitbucketHttpError && error.status === 404)
-            return []
+          if (error instanceof BitbucketHttpError && error.status === 404) return []
           throw error
         }
       })
@@ -294,10 +255,7 @@ export function App({ config }: Props) {
     return lists.flat().sort(compareUpdatedDesc)
   }
 
-  async function loadPullRequestDetail(
-    pr: PullRequest,
-    options: { refresh?: boolean } = {}
-  ) {
+  async function loadPullRequestDetail(pr: PullRequest, options: { refresh?: boolean } = {}) {
     const repoSlug = prRepoSlug(pr)
     if (!repoSlug) return
 
@@ -315,18 +273,12 @@ export function App({ config }: Props) {
       setState(current => ({
         ...current,
         prDetails: { ...current.prDetails, [key]: detail },
-        loadingDetailKey:
-          current.loadingDetailKey === key
-            ? undefined
-            : current.loadingDetailKey
+        loadingDetailKey: current.loadingDetailKey === key ? undefined : current.loadingDetailKey
       }))
     } catch (error) {
       setState(current => ({
         ...current,
-        loadingDetailKey:
-          current.loadingDetailKey === key
-            ? undefined
-            : current.loadingDetailKey,
+        loadingDetailKey: current.loadingDetailKey === key ? undefined : current.loadingDetailKey,
         detailErrorKey: key,
         detailError: errorMessage(error)
       }))
@@ -346,11 +298,7 @@ export function App({ config }: Props) {
     return `${repoSlugs.length} filtered repos pull requests`
   }
 
-  function handleSearchKey(key: {
-    name: string
-    sequence?: string
-    ctrl?: boolean
-  }) {
+  function handleSearchKey(key: { name: string; sequence?: string; ctrl?: boolean }) {
     if (key.name === 'escape') {
       setState(current => ({
         ...current,
@@ -366,9 +314,7 @@ export function App({ config }: Props) {
       setState(current => ({
         ...current,
         searchMode: false,
-        status: current.search
-          ? `Filtered by ${current.search}`
-          : 'Search cleared'
+        status: current.search ? `Filtered by ${current.search}` : 'Search cleared'
       }))
       return
     }
@@ -394,11 +340,7 @@ export function App({ config }: Props) {
   function move(delta: number) {
     setState(current => ({
       ...current,
-      selectedPrIndex: clamp(
-        current.selectedPrIndex + delta,
-        0,
-        filterPrs(current.prs, current.search).length - 1
-      ),
+      selectedPrIndex: clamp(current.selectedPrIndex + delta, 0, filterPrs(current.prs, current.search).length - 1),
       detailScroll: 0,
       pendingG: false
     }))
@@ -408,11 +350,7 @@ export function App({ config }: Props) {
     const amount = Math.max(5, Math.floor(height / 2))
     setState(current => ({
       ...current,
-      selectedPrIndex: clamp(
-        current.selectedPrIndex + amount * direction,
-        0,
-        filterPrs(current.prs, current.search).length - 1
-      ),
+      selectedPrIndex: clamp(current.selectedPrIndex + amount * direction, 0, filterPrs(current.prs, current.search).length - 1),
       detailScroll: 0
     }))
   }
@@ -429,10 +367,7 @@ export function App({ config }: Props) {
   function jumpToEnd() {
     setState(current => ({
       ...current,
-      selectedPrIndex: Math.max(
-        0,
-        filterPrs(current.prs, current.search).length - 1
-      ),
+      selectedPrIndex: Math.max(0, filterPrs(current.prs, current.search).length - 1),
       detailScroll: 0,
       pendingG: false
     }))
@@ -441,11 +376,7 @@ export function App({ config }: Props) {
   function scrollDetail(delta: number) {
     setState(current => ({
       ...current,
-      detailScroll: clamp(
-        current.detailScroll + delta,
-        0,
-        maxDetailScroll(selectedPr, height)
-      ),
+      detailScroll: clamp(current.detailScroll + delta, 0, maxDetailScroll(selectedPr, height)),
       pendingG: false
     }))
   }
@@ -471,8 +402,7 @@ export function App({ config }: Props) {
 
   function yankSelectedPr() {
     if (!selectedPr) return
-    const text =
-      selectedPr.links?.html?.href || `#${selectedPr.id} ${selectedPr.title}`
+    const text = selectedPr.links?.html?.href || `#${selectedPr.id} ${selectedPr.title}`
     const copied = copyToClipboard(text)
     setState(current => ({
       ...current,
@@ -485,13 +415,9 @@ export function App({ config }: Props) {
   }
 
   const compact = width < 110
-  const detailPaneWidth = compact
-    ? width
-    : Math.max(30, Math.floor(width * 0.25))
+  const detailPaneWidth = compact ? width : Math.max(30, Math.floor(width * 0.25))
   const tableWidth = Math.max(80, width - (compact ? 4 : detailPaneWidth + 8))
-  const selectedDetail = selectedPr
-    ? state.prDetails[detailKey(selectedPr)]
-    : undefined
+  const selectedDetail = selectedPr ? state.prDetails[detailKey(selectedPr)] : undefined
   const detail = renderDetail(
     selectedPr,
     selectedDetail,
@@ -502,40 +428,21 @@ export function App({ config }: Props) {
     detailVisibleLines(height, config.debug, state.networkRequests.length)
   )
   const debugRows = renderNetworkRequests(state.networkRequests)
-  const title =
-    state.tab === 'mine'
-      ? 'My Pull Requests'
-      : state.tab === 'review'
-        ? 'Needs My Review'
-        : 'Current Repo Pull Requests'
+  const title = state.tab === 'mine' ? 'My Pull Requests' : state.tab === 'review' ? 'Needs My Review' : 'Current Repo Pull Requests'
 
   return (
-    <box
-      width="100%"
-      height="100%"
-      flexDirection="column"
-      backgroundColor={theme.bg}
-    >
+    <box width="100%" height="100%" flexDirection="column" backgroundColor={theme.bg}>
       <box height={4} paddingX={1} flexDirection="column">
         <text fg={theme.muted}>
-          <span
-            fg={state.tab === 'mine' ? theme.text : theme.muted}
-            bg={state.tab === 'mine' ? theme.bluePanel : undefined}
-          >
+          <span fg={state.tab === 'mine' ? theme.text : theme.muted} bg={state.tab === 'mine' ? theme.bluePanel : undefined}>
             {' '}
             Me (1){' '}
           </span>{' '}
-          <span
-            fg={state.tab === 'review' ? theme.text : theme.muted}
-            bg={state.tab === 'review' ? theme.bluePanel : theme.panelAlt}
-          >
+          <span fg={state.tab === 'review' ? theme.text : theme.muted} bg={state.tab === 'review' ? theme.bluePanel : theme.panelAlt}>
             {' '}
             Needs Review (2){' '}
           </span>{' '}
-          <span
-            fg={state.tab === 'current' ? theme.text : theme.muted}
-            bg={state.tab === 'current' ? theme.bluePanel : theme.panelAlt}
-          >
+          <span fg={state.tab === 'current' ? theme.text : theme.muted} bg={state.tab === 'current' ? theme.bluePanel : theme.panelAlt}>
             {' '}
             Current Repo (3){' '}
           </span>{' '}
@@ -543,9 +450,7 @@ export function App({ config }: Props) {
         </text>
         <text fg={theme.muted}>
           {icons.search} workspace:{config.workspace}
-          {currentRepoSlugs().length > 0
-            ? ` repo:${currentRepoSlugs().join(',')}`
-            : ''}
+          {currentRepoSlugs().length > 0 ? ` repo:${currentRepoSlugs().join(',')}` : ''}
         </text>
       </box>
 
@@ -554,31 +459,19 @@ export function App({ config }: Props) {
           flexGrow={1}
           flexDirection="column"
           borderStyle="single"
-          borderColor={
-            state.focus === 'prs' ? theme.activeBorder : theme.border
-          }
-          paddingX={1}
-        >
+          borderColor={state.focus === 'prs' ? theme.activeBorder : theme.border}
+          paddingX={1}>
           <text fg={theme.accent}>{title}</text>
           <text fg={theme.muted}>{tableHeader(tableWidth)}</text>
-          {renderGroupedPrs(
-            filteredPrs,
-            state.selectedPrIndex,
-            state.focus === 'prs',
-            state.loadingPrs,
-            tableWidth
-          )}
+          {renderGroupedPrs(filteredPrs, state.selectedPrIndex, state.focus === 'prs', state.loadingPrs, tableWidth)}
         </box>
 
         <box
           width={compact ? '100%' : detailPaneWidth}
           flexDirection="column"
           borderStyle="single"
-          borderColor={
-            state.focus === 'detail' ? theme.activeBorder : theme.border
-          }
-          paddingX={1}
-        >
+          borderColor={state.focus === 'detail' ? theme.activeBorder : theme.border}
+          paddingX={1}>
           <text fg={theme.text}>{detail}</text>
         </box>
       </box>
@@ -589,23 +482,15 @@ export function App({ config }: Props) {
           borderStyle="single"
           borderColor={theme.warning}
           paddingX={1}
-          flexDirection="column"
-        >
+          flexDirection="column">
           <text fg={theme.warning}>Network debug</text>
           <text fg={theme.muted}>{debugRows}</text>
         </box>
       ) : null}
 
-      <box
-        height={2}
-        borderStyle="single"
-        borderColor={state.error ? theme.danger : theme.border}
-        paddingX={1}
-      >
+      <box height={2} borderStyle="single" borderColor={state.error ? theme.danger : theme.border} paddingX={1}>
         <text fg={state.error ? theme.danger : theme.muted}>
-          {state.error ??
-            (state.searchMode ? `/${state.search}` : state.status)}{' '}
-          <span fg={theme.warning}>g? help</span>
+          {state.error ?? (state.searchMode ? `/${state.search}` : state.status)} <span fg={theme.warning}>g? help</span>
         </text>
       </box>
     </box>
@@ -616,16 +501,9 @@ function currentUserIdentity(config: AppConfig) {
   return { username: config.user, displayName: config.displayName }
 }
 
-function renderGroupedPrs(
-  prs: PullRequest[],
-  selected: number,
-  active: boolean,
-  loading: boolean,
-  width: number
-) {
+function renderGroupedPrs(prs: PullRequest[], selected: number, active: boolean, loading: boolean, width: number) {
   if (loading) return <text fg={theme.muted}>{'\nLoading...'}</text>
-  if (prs.length === 0)
-    return <text fg={theme.muted}>{'\nNo open pull requests'}</text>
+  if (prs.length === 0) return <text fg={theme.muted}>{'\nNo open pull requests'}</text>
 
   let rowIndex = 0
   return groupPrsByRepo(prs).map(group => (
@@ -636,11 +514,7 @@ function renderGroupedPrs(
         const index = rowIndex++
         const selectedRow = index === selected
         return (
-          <text
-            key={`${group.repo}-${pr.id}`}
-            fg={selectedRow ? theme.text : theme.muted}
-            bg={selectedRow ? theme.panelAlt : undefined}
-          >
+          <text key={`${group.repo}-${pr.id}`} fg={selectedRow ? theme.text : theme.muted} bg={selectedRow ? theme.panelAlt : undefined}>
             {tableRow(pr, selectedRow ? (active ? '▌' : '│') : ' ', width)}
           </text>
         )
@@ -691,16 +565,7 @@ function tableColumns(width: number) {
     updated: 8
   }
   const gaps = 7
-  const fluid = Math.max(
-    40,
-    width -
-      fixed.cursor -
-      fixed.comments -
-      fixed.tasks -
-      fixed.created -
-      fixed.updated -
-      gaps
-  )
+  const fluid = Math.max(40, width - fixed.cursor - fixed.comments - fixed.tasks - fixed.created - fixed.updated - gaps)
   const author = Math.max(16, Math.floor(fluid * 0.2))
   const branch = Math.max(24, Math.floor(fluid * 0.35))
   const title = Math.max(24, fluid - author - branch)
@@ -708,11 +573,7 @@ function tableColumns(width: number) {
   return { ...fixed, title, author, branch }
 }
 
-function cell(
-  value: string,
-  width: number,
-  align: 'left' | 'right' = 'left'
-): string {
+function cell(value: string, width: number, align: 'left' | 'right' = 'left'): string {
   const text = truncate(value, width)
   return align === 'right' ? text.padStart(width) : text.padEnd(width)
 }
@@ -741,21 +602,14 @@ function renderDetail(
   }
 
   if (!detail && detailErrorKey === key && detailError) {
-    return [
-      '',
-      `Could not load PR #${pr.id}`,
-      '',
-      `Repo: ${repoName(pr)}`,
-      detailError
-    ].join('\n')
+    return ['', `Could not load PR #${pr.id}`, '', `Repo: ${repoName(pr)}`, detailError].join('\n')
   }
 
   const fullPr = detail?.pr ?? pr
   const author = displayAccount(fullPr.author)
   const source = branchName(fullPr.source) || 'unknown'
   const destination = branchName(fullPr.destination) || 'unknown'
-  const reviewers =
-    fullPr.reviewers?.map(displayAccount).filter(Boolean).join(', ') || 'none'
+  const reviewers = fullPr.reviewers?.map(displayAccount).filter(Boolean).join(', ') || 'none'
   const description = fullPr.description?.trim() || 'No description'
   const status = aggregateStatus(detail?.statuses ?? [])
 
@@ -766,11 +620,7 @@ function renderDetail(
     `Repo:   ${repoName(fullPr)}`,
     `Branch: ${icons.branch} ${source} → ${destination}`,
     `State:  ${fullPr.state}  Checks: ${status}`,
-    loading
-      ? 'Loading details…'
-      : detailError
-        ? `Detail load failed: ${detailError}`
-        : '',
+    loading ? 'Loading details…' : detailError ? `Detail load failed: ${detailError}` : '',
     '',
     'Sections',
     `  • Overview`,
@@ -807,35 +657,23 @@ function renderDetail(
   ].filter(line => line !== undefined)
   const maxScroll = Math.max(0, lines.length - visibleLines)
   const safeScroll = clamp(scroll, 0, maxScroll)
-  const marker =
-    maxScroll > 0
-      ? `  [${safeScroll + 1}-${Math.min(lines.length, safeScroll + visibleLines)}/${lines.length}]`
-      : ''
+  const marker = maxScroll > 0 ? `  [${safeScroll + 1}-${Math.min(lines.length, safeScroll + visibleLines)}/${lines.length}]` : ''
 
-  return [...lines.slice(safeScroll, safeScroll + visibleLines), marker].join(
-    '\n'
-  )
+  return [...lines.slice(safeScroll, safeScroll + visibleLines), marker].join('\n')
 }
 
 function renderStatuses(detail: PullRequestDetail | undefined): string[] {
   if (!detail) return ['No status data loaded yet']
   if (detail.statuses.length === 0) return ['No statuses']
-  return detail.statuses
-    .slice(0, 8)
-    .map(
-      status =>
-        `${status.state ?? 'UNKNOWN'} ${status.name || status.key || 'check'}`
-    )
+  return detail.statuses.slice(0, 8).map(status => `${status.state ?? 'UNKNOWN'} ${status.name || status.key || 'check'}`)
 }
 
 function renderActivity(detail: PullRequestDetail | undefined): string[] {
   if (!detail) return ['No activity loaded yet']
   if (detail.activity.length === 0) return ['No activity']
   return detail.activity.slice(0, 8).map(item => {
-    if (item.approval)
-      return `${formatDate(item.approval.date)} ${displayAccount(item.approval.user)} approved`
-    if (item.comment)
-      return `${formatDate(item.comment.created_on)} ${displayAccount(item.comment.user)} commented`
+    if (item.approval) return `${formatDate(item.approval.date)} ${displayAccount(item.approval.user)} approved`
+    if (item.comment) return `${formatDate(item.comment.created_on)} ${displayAccount(item.comment.user)} commented`
     if (item.update)
       return `${formatDate(item.update.date)} ${displayAccount(item.update.author)} updated ${branchName(item.update.source)} → ${branchName(item.update.destination)}`
     return 'Activity update'
@@ -846,12 +684,8 @@ function renderComments(detail: PullRequestDetail | undefined): string[] {
   if (!detail) return ['No comments loaded yet']
   if (detail.comments.length === 0) return ['No comments']
   return detail.comments.slice(0, 8).flatMap(comment => {
-    const location = comment.inline?.path
-      ? ` (${comment.inline.path}:${comment.inline.to ?? comment.inline.from ?? ''})`
-      : ''
-    const body = comment.deleted
-      ? '[deleted]'
-      : comment.content?.raw?.trim() || 'No content'
+    const location = comment.inline?.path ? ` (${comment.inline.path}:${comment.inline.to ?? comment.inline.from ?? ''})` : ''
+    const body = comment.deleted ? '[deleted]' : comment.content?.raw?.trim() || 'No content'
     return [
       `${displayAccount(comment.user)}${location}`,
       ...body
@@ -865,23 +699,13 @@ function renderComments(detail: PullRequestDetail | undefined): string[] {
 function renderTasks(detail: PullRequestDetail | undefined): string[] {
   if (!detail) return ['No tasks loaded yet']
   if (detail.tasks.length === 0) return ['No tasks']
-  return detail.tasks
-    .slice(0, 8)
-    .map(
-      task =>
-        `${task.state ?? 'OPEN'} ${task.content?.raw?.trim() || `Task #${task.id}`}`
-    )
+  return detail.tasks.slice(0, 8).map(task => `${task.state ?? 'OPEN'} ${task.content?.raw?.trim() || `Task #${task.id}`}`)
 }
 
 function renderCommits(detail: PullRequestDetail | undefined): string[] {
   if (!detail) return ['No commits loaded yet']
   if (detail.commits.length === 0) return ['No commits']
-  return detail.commits
-    .slice(0, 8)
-    .map(
-      commit =>
-        `${(commit.hash || '').slice(0, 12)} ${firstLine(commit.message)}`
-    )
+  return detail.commits.slice(0, 8).map(commit => `${(commit.hash || '').slice(0, 12)} ${firstLine(commit.message)}`)
 }
 
 function renderChanges(detail: PullRequestDetail | undefined): string[] {
@@ -896,11 +720,9 @@ function renderChanges(detail: PullRequestDetail | undefined): string[] {
 function aggregateStatus(statuses: PullRequestDetail['statuses']): string {
   if (statuses.length === 0) return 'unknown'
   if (statuses.some(status => status.state === 'FAILED')) return 'failed'
-  if (statuses.some(status => status.state === 'INPROGRESS'))
-    return 'in progress'
+  if (statuses.some(status => status.state === 'INPROGRESS')) return 'in progress'
   if (statuses.some(status => status.state === 'STOPPED')) return 'stopped'
-  if (statuses.some(status => status.state === 'SUCCESSFUL'))
-    return 'successful'
+  if (statuses.some(status => status.state === 'SUCCESSFUL')) return 'successful'
   return 'unknown'
 }
 
@@ -909,9 +731,7 @@ function firstLine(value?: string): string {
 }
 
 function displayAccount(account: PullRequest['author']): string {
-  return (
-    account?.display_name || account?.nickname || account?.username || 'unknown'
-  )
+  return account?.display_name || account?.nickname || account?.username || 'unknown'
 }
 
 function filterPrs(prs: PullRequest[], search: string): PullRequest[] {
@@ -919,14 +739,7 @@ function filterPrs(prs: PullRequest[], search: string): PullRequest[] {
   if (!query) return prs
 
   return prs.filter(pr => {
-    const haystack = [
-      pr.title,
-      pr.description,
-      pr.author?.display_name,
-      pr.author?.username,
-      repoName(pr),
-      String(pr.id)
-    ]
+    const haystack = [pr.title, pr.description, pr.author?.display_name, pr.author?.username, repoName(pr), String(pr.id)]
       .join(' ')
       .toLowerCase()
     return haystack.includes(query)
@@ -960,9 +773,7 @@ function detailKey(pr: PullRequest): string {
   return `${repoName(pr)}#${pr.id}`
 }
 
-function groupPrsByRepo(
-  prs: PullRequest[]
-): Array<{ repo: string; prs: PullRequest[] }> {
+function groupPrsByRepo(prs: PullRequest[]): Array<{ repo: string; prs: PullRequest[] }> {
   const groups = new Map<string, PullRequest[]>()
   for (const pr of prs) {
     const repo = repoName(pr)
@@ -975,33 +786,19 @@ function flattenGroupedPrs(prs: PullRequest[]): PullRequest[] {
   return groupPrsByRepo(prs).flatMap(group => group.prs)
 }
 
-function detailVisibleLines(
-  height: number,
-  debug: boolean,
-  networkRequestCount: number
-): number {
-  const debugHeight = debug
-    ? Math.min(6, Math.max(3, networkRequestCount + 2))
-    : 0
+function detailVisibleLines(height: number, debug: boolean, networkRequestCount: number): number {
+  const debugHeight = debug ? Math.min(6, Math.max(3, networkRequestCount + 2)) : 0
   return Math.max(4, height - debugHeight - 10)
 }
 
 function maxDetailScroll(pr: PullRequest | undefined, height: number): number {
   if (!pr) return 0
-  const descriptionLines = (pr.description?.trim() || 'No description').split(
-    '\n'
-  ).length
-  return Math.max(
-    0,
-    80 + descriptionLines - detailVisibleLines(height, false, 0)
-  )
+  const descriptionLines = (pr.description?.trim() || 'No description').split('\n').length
+  return Math.max(0, 80 + descriptionLines - detailVisibleLines(height, false, 0))
 }
 
 function compareUpdatedDesc(a: PullRequest, b: PullRequest): number {
-  return (
-    new Date(b.updated_on ?? 0).getTime() -
-    new Date(a.updated_on ?? 0).getTime()
-  )
+  return new Date(b.updated_on ?? 0).getTime() - new Date(a.updated_on ?? 0).getTime()
 }
 
 function renderNetworkRequests(requests: NetworkRequestLog[]): string {

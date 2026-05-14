@@ -1,4 +1,15 @@
-import type { CommitStatus, Page, PullRequest, PullRequestActivity, PullRequestComment, PullRequestCommit, PullRequestDetail, PullRequestDiffstat, PullRequestTask, Repository } from "./models"
+import type {
+  CommitStatus,
+  Page,
+  PullRequest,
+  PullRequestActivity,
+  PullRequestComment,
+  PullRequestCommit,
+  PullRequestDetail,
+  PullRequestDiffstat,
+  PullRequestTask,
+  Repository
+} from './models'
 
 type CacheEntry<T> = {
   expiresAt: number
@@ -6,9 +17,9 @@ type CacheEntry<T> = {
 }
 
 export type NetworkRequestLog = {
-  method: "GET"
+  method: 'GET'
   url: string
-  status: number | "CACHE" | "ERR"
+  status: number | 'CACHE' | 'ERR'
   durationMs: number
   cached: boolean
   timestamp: Date
@@ -17,7 +28,7 @@ export type NetworkRequestLog = {
 export class BitbucketHttpError extends Error {
   constructor(
     readonly status: number,
-    message: string,
+    message: string
   ) {
     super(message)
   }
@@ -29,21 +40,21 @@ export type BitbucketUserIdentity = {
 }
 
 function needsReview(pr: PullRequest, identity: BitbucketUserIdentity): boolean {
-  const normalizedValues = [identity.username, identity.displayName].filter(Boolean).map((value) => value!.toLowerCase())
+  const normalizedValues = [identity.username, identity.displayName].filter(Boolean).map(value => value!.toLowerCase())
   const reviewers = pr.reviewers ?? []
   const participantReviewers = (pr.participants ?? [])
-    .filter((participant) => participant.role?.toUpperCase() === "REVIEWER")
-    .map((participant) => participant.user)
-    .filter((user) => user !== undefined)
+    .filter(participant => participant.role?.toUpperCase() === 'REVIEWER')
+    .map(participant => participant.user)
+    .filter(user => user !== undefined)
 
-  return [...reviewers, ...participantReviewers].some((reviewer) => {
+  return [...reviewers, ...participantReviewers].some(reviewer => {
     const ids = [reviewer.username, reviewer.nickname, reviewer.uuid, reviewer.account_id, reviewer.display_name]
-    return ids.some((id) => id && normalizedValues.includes(id.toLowerCase()))
+    return ids.some(id => id && normalizedValues.includes(id.toLowerCase()))
   })
 }
 
 export class BitbucketClient {
-  private readonly baseUrl = "https://api.bitbucket.org/2.0"
+  private readonly baseUrl = 'https://api.bitbucket.org/2.0'
   private readonly cache = new Map<string, CacheEntry<unknown>>()
 
   constructor(
@@ -51,7 +62,7 @@ export class BitbucketClient {
     private readonly token: string,
     private readonly workspace: string,
     private readonly cacheTtlSeconds: number,
-    private readonly onRequest?: (request: NetworkRequestLog) => void,
+    private readonly onRequest?: (request: NetworkRequestLog) => void
   ) {}
 
   async listRepositories(options: { refresh?: boolean } = {}): Promise<Repository[]> {
@@ -63,7 +74,7 @@ export class BitbucketClient {
     return this.request<Repository>(`${this.baseUrl}/repositories/${this.workspace}/${encodedRepo}`, options)
   }
 
-  async listPullRequests(repoSlug: string, state = "OPEN", options: { refresh?: boolean } = {}): Promise<PullRequest[]> {
+  async listPullRequests(repoSlug: string, state = 'OPEN', options: { refresh?: boolean } = {}): Promise<PullRequest[]> {
     return this.listRepoPullRequests(repoSlug, state, undefined, options)
   }
 
@@ -80,39 +91,61 @@ export class BitbucketClient {
       this.optionalFetchPages<PullRequestActivity>(pr.links?.activity?.href, options),
       this.optionalPages<CommitStatus>(pr.links?.statuses?.href, options),
       this.optionalPages<PullRequestComment>(pr.links?.comments?.href, options),
-      this.optionalFetchPages<PullRequestTask>(`${this.baseUrl}/repositories/${this.workspace}/${encodeURIComponent(repoSlug)}/pullrequests/${prId}/tasks?pagelen=100`, options),
+      this.optionalFetchPages<PullRequestTask>(
+        `${this.baseUrl}/repositories/${this.workspace}/${encodeURIComponent(repoSlug)}/pullrequests/${prId}/tasks?pagelen=100`,
+        options
+      )
     ])
 
     return { pr, commits, diffstat, activity, statuses, comments, tasks }
   }
 
-  async listPullRequestsNeedingReview(identity: BitbucketUserIdentity, state = "OPEN", options: { refresh?: boolean } = {}): Promise<PullRequest[]> {
-    return (await this.listWorkspaceUserPullRequests(identity.username, state, undefined, options)).filter((pr) => needsReview(pr, identity))
+  async listPullRequestsNeedingReview(
+    identity: BitbucketUserIdentity,
+    state = 'OPEN',
+    options: { refresh?: boolean } = {}
+  ): Promise<PullRequest[]> {
+    return (await this.listWorkspaceUserPullRequests(identity.username, state, undefined, options)).filter(pr => needsReview(pr, identity))
   }
 
-  async listRepoPullRequestsNeedingReview(repoSlug: string, identity: BitbucketUserIdentity, state = "OPEN", options: { refresh?: boolean } = {}): Promise<PullRequest[]> {
-    return (await this.listRepoPullRequests(repoSlug, state, undefined, options)).filter((pr) => needsReview(pr, identity))
+  async listRepoPullRequestsNeedingReview(
+    repoSlug: string,
+    identity: BitbucketUserIdentity,
+    state = 'OPEN',
+    options: { refresh?: boolean } = {}
+  ): Promise<PullRequest[]> {
+    return (await this.listRepoPullRequests(repoSlug, state, undefined, options)).filter(pr => needsReview(pr, identity))
   }
 
-  async listMyPullRequests(username: string, state = "OPEN", options: { refresh?: boolean } = {}): Promise<PullRequest[]> {
+  async listMyPullRequests(username: string, state = 'OPEN', options: { refresh?: boolean } = {}): Promise<PullRequest[]> {
     return this.listWorkspaceUserPullRequests(username, state, undefined, options)
   }
 
-  private async listWorkspaceUserPullRequests(username: string, state: string, query: string | undefined, options: { refresh?: boolean }): Promise<PullRequest[]> {
+  private async listWorkspaceUserPullRequests(
+    username: string,
+    state: string,
+    query: string | undefined,
+    options: { refresh?: boolean }
+  ): Promise<PullRequest[]> {
     const encodedUser = encodeURIComponent(username)
-    const queryParam = query ? `&q=${encodeURIComponent(query)}` : ""
+    const queryParam = query ? `&q=${encodeURIComponent(query)}` : ''
     return this.fetchPages<PullRequest>(
       `${this.baseUrl}/workspaces/${this.workspace}/pullrequests/${encodedUser}?state=${encodeURIComponent(state)}&pagelen=50${queryParam}`,
-      options,
+      options
     )
   }
 
-  private async listRepoPullRequests(repoSlug: string, state: string, query: string | undefined, options: { refresh?: boolean }): Promise<PullRequest[]> {
+  private async listRepoPullRequests(
+    repoSlug: string,
+    state: string,
+    query: string | undefined,
+    options: { refresh?: boolean }
+  ): Promise<PullRequest[]> {
     const encodedRepo = encodeURIComponent(repoSlug)
-    const queryParam = query ? `&q=${encodeURIComponent(query)}` : ""
+    const queryParam = query ? `&q=${encodeURIComponent(query)}` : ''
     return this.fetchPages<PullRequest>(
       `${this.baseUrl}/repositories/${this.workspace}/${encodedRepo}/pullrequests?state=${encodeURIComponent(state)}&pagelen=50${queryParam}`,
-      options,
+      options
     )
   }
 
@@ -131,7 +164,7 @@ export class BitbucketClient {
 
   private async fetchLinkPages<T>(url: string | undefined, options: { refresh?: boolean } = {}): Promise<T[]> {
     if (!url) return []
-    const separator = url.includes("?") ? "&" : "?"
+    const separator = url.includes('?') ? '&' : '?'
     return this.fetchPages<T>(`${url}${separator}pagelen=100`, options)
   }
 
@@ -161,7 +194,12 @@ export class BitbucketClient {
     if (!options.refresh) {
       const cached = this.cache.get(url) as CacheEntry<T> | undefined
       if (cached && cached.expiresAt > Date.now()) {
-        this.recordRequest({ url, status: "CACHE", durationMs: Date.now() - startedAt, cached: true })
+        this.recordRequest({
+          url,
+          status: 'CACHE',
+          durationMs: Date.now() - startedAt,
+          cached: true
+        })
         return cached.value
       }
     }
@@ -170,16 +208,21 @@ export class BitbucketClient {
     try {
       response = await fetch(url, {
         headers: {
-          Accept: "application/json",
-          Authorization: `Basic ${btoa(`${this.user}:${this.token}`)}`,
-        },
+          Accept: 'application/json',
+          Authorization: `Basic ${btoa(`${this.user}:${this.token}`)}`
+        }
       })
     } catch (error) {
-      this.recordRequest({ url, status: "ERR", durationMs: Date.now() - startedAt, cached: false })
+      this.recordRequest({ url, status: 'ERR', durationMs: Date.now() - startedAt, cached: false })
       throw error
     }
 
-    this.recordRequest({ url, status: response.status, durationMs: Date.now() - startedAt, cached: false })
+    this.recordRequest({
+      url,
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+      cached: false
+    })
 
     if (!response.ok) {
       const body = await response.text()
@@ -190,18 +233,18 @@ export class BitbucketClient {
     if (this.cacheTtlSeconds > 0) {
       this.cache.set(url, {
         value,
-        expiresAt: Date.now() + this.cacheTtlSeconds * 1000,
+        expiresAt: Date.now() + this.cacheTtlSeconds * 1000
       })
     }
 
     return value
   }
 
-  private recordRequest(request: Omit<NetworkRequestLog, "method" | "timestamp">): void {
+  private recordRequest(request: Omit<NetworkRequestLog, 'method' | 'timestamp'>): void {
     this.onRequest?.({
-      method: "GET",
+      method: 'GET',
       timestamp: new Date(),
-      ...request,
+      ...request
     })
   }
 }
