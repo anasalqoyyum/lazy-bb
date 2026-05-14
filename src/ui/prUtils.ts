@@ -2,7 +2,7 @@ import type { PullRequest } from '../bitbucket/models'
 import type { AppConfig } from '../config'
 
 export type FocusPane = 'prs' | 'detail'
-export type PrTab = 'mine' | 'review' | 'current'
+export type PrTab = 'mine' | 'current'
 
 export function currentUserIdentity(config: AppConfig) {
   return { username: config.user, displayName: config.displayName }
@@ -15,16 +15,14 @@ export function currentRepoSlugs(config: AppConfig): string[] {
 
 export function tabLabel(tab: PrTab, repoSlugs: string[]): string {
   if (tab === 'mine') return 'my pull requests'
-  if (tab === 'review') return 'pull requests needing my review'
-  if (repoSlugs.length === 0) return 'current repo pull requests'
+  if (repoSlugs.length === 0) return 'configured repo pull requests'
   if (repoSlugs.length === 1) return `${repoSlugs[0]} pull requests`
-  return `${repoSlugs.length} filtered repos pull requests`
+  return `${repoSlugs.length} configured repos pull requests`
 }
 
 export function tabTitle(tab: PrTab): string {
   if (tab === 'mine') return 'My Pull Requests'
-  if (tab === 'review') return 'Needs My Review'
-  return 'Current Repo Pull Requests'
+  return 'Pull Requests'
 }
 
 export function filterPrs(prs: PullRequest[], search: string): PullRequest[] {

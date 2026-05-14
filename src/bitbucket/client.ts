@@ -1,4 +1,5 @@
 import type {
+  Account,
   CommitStatus,
   Page,
   PullRequest,
@@ -37,10 +38,15 @@ export class BitbucketHttpError extends Error {
 export type BitbucketUserIdentity = {
   username: string
   displayName?: string
+  nickname?: string
+  uuid?: string
+  accountId?: string
 }
 
 function needsReview(pr: PullRequest, identity: BitbucketUserIdentity): boolean {
-  const normalizedValues = [identity.username, identity.displayName].filter(Boolean).map(value => value!.toLowerCase())
+  const normalizedValues = [identity.username, identity.displayName, identity.nickname, identity.uuid, identity.accountId]
+    .filter(Boolean)
+    .map(value => value!.toLowerCase())
   const reviewers = pr.reviewers ?? []
   const participantReviewers = (pr.participants ?? [])
     .filter(participant => participant.role?.toUpperCase() === 'REVIEWER')
@@ -72,6 +78,24 @@ export class BitbucketClient {
   async getRepository(repoSlug: string, options: { refresh?: boolean } = {}): Promise<Repository> {
     const encodedRepo = encodeURIComponent(repoSlug)
     return this.request<Repository>(`${this.baseUrl}/repositories/${this.workspace}/${encodedRepo}`, options)
+  }
+
+  async currentUser(options: { refresh?: boolean } = {}): Promise<Account> {
+    return this.request<Account>(`${this.baseUrl}/user`, options)
+  }
+
+  async currentUserIdentity(options: { refresh?: boolean } = {}): Promise<BitbucketUserIdentity> {
+    const user = await this.currentUser(options)
+    const username = user.username || user.account_id || (!this.user.includes('@') ? this.user : '')
+    if (!username) throw new Error('Could not determine Bitbucket username for the current account')
+
+    return {
+      username,
+      displayName: user.display_name,
+      nickname: user.nickname,
+      uuid: user.uuid,
+      accountId: user.account_id
+    }
   }
 
   async listPullRequests(repoSlug: string, state = 'OPEN', options: { refresh?: boolean } = {}): Promise<PullRequest[]> {

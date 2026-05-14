@@ -1,6 +1,6 @@
 import { useKeyboard, useRenderer, useTerminalDimensions } from '@opentui/react'
 import { useEffect, useRef, useState } from 'react'
-import { BitbucketClient, BitbucketHttpError, type NetworkRequestLog } from '../bitbucket/client'
+import { BitbucketClient, BitbucketHttpError, type BitbucketUserIdentity, type NetworkRequestLog } from '../bitbucket/client'
 import type { PullRequest, PullRequestDetail } from '../bitbucket/models'
 import type { AppConfig } from '../config'
 import { openBrowser } from './browser'
@@ -12,7 +12,7 @@ import { renderNetworkRequests } from './networkDebug'
 import {
   compareUpdatedDesc,
   currentRepoSlugs,
-  currentUserIdentity,
+  currentUserIdentity as configuredUserIdentity,
   detailKey,
   filterPrs,
   flattenGroupedPrs,
@@ -37,6 +37,7 @@ type AppState = {
   search: string
   searchMode: boolean
   pendingG: boolean
+  detailPaneVisible: boolean
   detailScroll: number
   prDetails: Record<string, PullRequestDetail>
   loadingDetailKey?: string
@@ -64,12 +65,14 @@ export function App({ config }: Props) {
     search: '',
     searchMode: false,
     pendingG: false,
+    detailPaneVisible: true,
     detailScroll: 0,
     prDetails: {},
     networkRequests: []
   })
 
   const loadRequestId = useRef(0)
+  const userIdentity = useRef<BitbucketUserIdentity | undefined>(undefined)
   const [client] = useState(
     () =>
       new BitbucketClient(config.user, config.token, config.workspace, config.cacheTtlSeconds, request => {
@@ -88,9 +91,9 @@ export function App({ config }: Props) {
   }, [])
 
   useEffect(() => {
-    if (!selectedPr) return
+    if (!selectedPr || !state.detailPaneVisible) return
     void loadPullRequestDetail(selectedPr)
-  }, [selectedPr?.id, repoName(selectedPr)])
+  }, [selectedPr?.id, repoName(selectedPr), state.detailPaneVisible])
 
   useKeyboard(key => {
     if (state.searchMode) {
@@ -112,8 +115,7 @@ export function App({ config }: Props) {
       setState(current => ({
         ...current,
         pendingG: false,
-        status:
-          'j/k move · h/l panes · 1 my PRs · 2 needs review · 3 repo/filter · gg/G top/bottom · / search · r refresh · o open · y yank · q quit'
+        status: 'j/k move · h/l panes · p detail · 1 me · 2 repo · gg/G top/bottom · / search · r refresh · o open · y yank · q quit'
       }))
       return
     }
@@ -159,7 +161,10 @@ export function App({ config }: Props) {
         break
       case 'l':
       case 'right':
-        setFocus('detail')
+        if (state.detailPaneVisible) setFocus('detail')
+        break
+      case 'p':
+        toggleDetailPane()
         break
       case 'G':
         if (state.focus === 'detail') scrollDetailToEnd()
@@ -191,9 +196,6 @@ export function App({ config }: Props) {
         void loadPullRequests('mine')
         break
       case '2':
-        void loadPullRequests('review')
-        break
-      case '3':
         void loadPullRequests('current')
         break
     }
@@ -237,19 +239,13 @@ export function App({ config }: Props) {
   }
 
   async function loadTabPullRequests(tab: PrTab, repoSlugs: string[], options: { refresh?: boolean }): Promise<PullRequest[]> {
-    if (tab === 'mine') return client.listMyPullRequests(config.user, config.pullRequestState, options)
-    if (tab === 'review' && repoSlugs.length === 0)
-      return (await client.listPullRequestsNeedingReview(currentUserIdentity(config), config.pullRequestState, options)).sort(
-        compareUpdatedDesc
-      )
+    if (tab === 'mine') return client.listMyPullRequests((await resolveUserIdentity(options)).username, config.pullRequestState, options)
 
     if (repoSlugs.length === 0) return []
 
     const lists = await Promise.all(
       repoSlugs.map(async slug => {
         try {
-          if (tab === 'review')
-            return await client.listRepoPullRequestsNeedingReview(slug, currentUserIdentity(config), config.pullRequestState, options)
           return await client.listPullRequests(slug, config.pullRequestState, options)
         } catch (error) {
           if (error instanceof BitbucketHttpError && error.status === 404) return []
@@ -258,6 +254,18 @@ export function App({ config }: Props) {
       })
     )
     return lists.flat().sort(compareUpdatedDesc)
+  }
+
+  async function resolveUserIdentity(options: { refresh?: boolean }) {
+    if (!options.refresh && userIdentity.current) return userIdentity.current
+
+    try {
+      userIdentity.current = await client.currentUserIdentity(options)
+    } catch (error) {
+      if (config.user.includes('@')) throw error
+      userIdentity.current = configuredUserIdentity(config)
+    }
+    return userIdentity.current
   }
 
   function handlePullRequestLoadError(error: unknown, requestId: number, tab: PrTab, label: string) {
@@ -290,6 +298,8 @@ export function App({ config }: Props) {
   }
 
   async function loadPullRequestDetail(pr: PullRequest, options: { refresh?: boolean } = {}) {
+    if (!state.detailPaneVisible) return
+
     const repoSlug = prRepoSlug(pr)
     if (!repoSlug) return
 
@@ -405,6 +415,16 @@ export function App({ config }: Props) {
     setState(current => ({ ...current, focus, pendingG: false }))
   }
 
+  function toggleDetailPane() {
+    setState(current => ({
+      ...current,
+      detailPaneVisible: !current.detailPaneVisible,
+      focus: current.detailPaneVisible && current.focus === 'detail' ? 'prs' : current.focus,
+      pendingG: false,
+      status: current.detailPaneVisible ? 'Detail pane hidden' : 'Detail pane shown'
+    }))
+  }
+
   function openSelectedPr() {
     const href = selectedPr?.links?.html?.href
     if (!href) return
@@ -423,7 +443,7 @@ export function App({ config }: Props) {
   }
 
   function refresh() {
-    if (selectedPr) {
+    if (selectedPr && state.detailPaneVisible) {
       const key = detailKey(selectedPr)
       setState(current => {
         const prDetails = { ...current.prDetails }
@@ -438,8 +458,8 @@ export function App({ config }: Props) {
 
   const compact = width < 110
   const repoSlugs = currentRepoSlugs(config)
-  const detailPaneWidth = compact ? width : Math.max(30, Math.floor(width * 0.25))
-  const tableWidth = Math.max(80, width - (compact ? 4 : detailPaneWidth + 8))
+  const detailPaneWidth = state.detailPaneVisible ? (compact ? width : Math.max(30, Math.floor(width * 0.25))) : 0
+  const tableWidth = Math.max(80, width - (compact || !state.detailPaneVisible ? 4 : detailPaneWidth + 8))
   const selectedDetail = selectedPr ? state.prDetails[detailKey(selectedPr)] : undefined
   const detail = renderDetail(
     selectedPr,
@@ -459,13 +479,9 @@ export function App({ config }: Props) {
             {' '}
             Me (1){' '}
           </span>{' '}
-          <span fg={state.tab === 'review' ? theme.text : theme.muted} bg={state.tab === 'review' ? theme.bluePanel : theme.panelAlt}>
-            {' '}
-            Needs Review (2){' '}
-          </span>{' '}
           <span fg={state.tab === 'current' ? theme.text : theme.muted} bg={state.tab === 'current' ? theme.bluePanel : theme.panelAlt}>
             {' '}
-            Current Repo (3){' '}
+            Pull Requests (2){' '}
           </span>{' '}
           <span fg={theme.accent}>{config.pullRequestState}</span> │ Refresh (R)
         </text>
@@ -493,14 +509,16 @@ export function App({ config }: Props) {
           />
         </box>
 
-        <box
-          width={compact ? '100%' : detailPaneWidth}
-          flexDirection="column"
-          borderStyle="single"
-          borderColor={state.focus === 'detail' ? theme.activeBorder : theme.border}
-          paddingX={1}>
-          <text fg={theme.text}>{detail}</text>
-        </box>
+        {state.detailPaneVisible ? (
+          <box
+            width={compact ? '100%' : detailPaneWidth}
+            flexDirection="column"
+            borderStyle="single"
+            borderColor={state.focus === 'detail' ? theme.activeBorder : theme.border}
+            paddingX={1}>
+            <text fg={theme.text}>{detail}</text>
+          </box>
+        ) : null}
       </box>
 
       {config.debug ? (
