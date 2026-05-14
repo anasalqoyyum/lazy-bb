@@ -1,7 +1,7 @@
 name: dependabot-sync
 on:
   schedule:
-    - cron: "0 0 * * 0" # every Sunday at midnight
+    - cron: '0 0 * * 0' # every Sunday at midnight
   workflow_dispatch: # allows manual triggering
 
 permissions:
