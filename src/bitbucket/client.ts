@@ -109,6 +109,10 @@ export class BitbucketClient {
 
   async getPullRequestDetail(repoSlug: string, prId: number, options: { refresh?: boolean } = {}): Promise<PullRequestDetail> {
     const pr = await this.getPullRequest(repoSlug, prId, options)
+    return this.getPullRequestSupplement(repoSlug, pr, options)
+  }
+
+  async getPullRequestSupplement(repoSlug: string, pr: PullRequest, options: { refresh?: boolean } = {}): Promise<PullRequestDetail> {
     const [commits, diffstat, activity, statuses, comments, tasks] = await Promise.all([
       this.optionalPages<PullRequestCommit>(pr.links?.commits?.href, options),
       this.optionalPages<PullRequestDiffstat>(pr.links?.diffstat?.href, options),
@@ -116,7 +120,7 @@ export class BitbucketClient {
       this.optionalPages<CommitStatus>(pr.links?.statuses?.href, options),
       this.optionalPages<PullRequestComment>(pr.links?.comments?.href, options),
       this.optionalFetchPages<PullRequestTask>(
-        `${this.baseUrl}/repositories/${this.workspace}/${encodeURIComponent(repoSlug)}/pullrequests/${prId}/tasks?pagelen=100`,
+        `${this.baseUrl}/repositories/${this.workspace}/${encodeURIComponent(repoSlug)}/pullrequests/${pr.id}/tasks?pagelen=100`,
         options
       )
     ])

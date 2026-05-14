@@ -5,7 +5,7 @@ import type { PullRequest, PullRequestDetail } from '../bitbucket/models'
 import type { AppConfig } from '../config'
 import { openBrowser } from './browser'
 import { copyToClipboard } from './clipboard'
-import { renderDetail, detailVisibleLines, maxDetailScroll } from './detail'
+import { renderDetail, detailVisibleLines, maxDetailScroll, type DetailTab } from './detail'
 import { clamp, errorMessage } from './format'
 import { getIcons } from './icons'
 import { renderNetworkRequests } from './networkDebug'
@@ -39,6 +39,7 @@ type AppState = {
   pendingG: boolean
   detailPaneVisible: boolean
   detailScroll: number
+  detailTab: DetailTab
   prDetails: Record<string, PullRequestDetail>
   loadingDetailKey?: string
   detailErrorKey?: string
@@ -67,6 +68,7 @@ export function App({ config }: Props) {
     pendingG: false,
     detailPaneVisible: true,
     detailScroll: 0,
+    detailTab: 'overview',
     prDetails: {},
     networkRequests: []
   })
@@ -115,7 +117,7 @@ export function App({ config }: Props) {
       setState(current => ({
         ...current,
         pendingG: false,
-        status: 'j/k move · h/l panes · p detail · 1 me · 2 repo · gg/G top/bottom · / search · r refresh · o open · y yank · q quit'
+        status: 'j/k move · h/l panes · [/]/tab detail tabs · p detail · 1 me · 2 repo · / search · r refresh · o open · y yank · q quit'
       }))
       return
     }
@@ -165,6 +167,13 @@ export function App({ config }: Props) {
         break
       case 'p':
         toggleDetailPane()
+        break
+      case '[':
+        moveDetailTab(-1)
+        break
+      case ']':
+      case 'tab':
+        moveDetailTab(1)
         break
       case 'G':
         if (state.focus === 'detail') scrollDetailToEnd()
@@ -313,7 +322,16 @@ export function App({ config }: Props) {
       detailError: undefined
     }))
     try {
-      const detail = await client.getPullRequestDetail(repoSlug, pr.id, options)
+      const overview = await client.getPullRequest(repoSlug, pr.id, options)
+      setState(current => ({
+        ...current,
+        prDetails: {
+          ...current.prDetails,
+          [key]: { pr: overview, commits: [], diffstat: [], activity: [], statuses: [], comments: [], tasks: [] }
+        }
+      }))
+
+      const detail = await client.getPullRequestSupplement(repoSlug, overview, options)
       setState(current => ({
         ...current,
         prDetails: { ...current.prDetails, [key]: detail },
@@ -373,6 +391,7 @@ export function App({ config }: Props) {
       ...current,
       selectedPrIndex: clamp(current.selectedPrIndex + delta, 0, filterPrs(current.prs, current.search).length - 1),
       detailScroll: 0,
+      detailTab: 'overview',
       pendingG: false
     }))
   }
@@ -382,7 +401,19 @@ export function App({ config }: Props) {
     setState(current => ({
       ...current,
       selectedPrIndex: clamp(current.selectedPrIndex + amount * direction, 0, filterPrs(current.prs, current.search).length - 1),
-      detailScroll: 0
+      detailScroll: 0,
+      detailTab: 'overview'
+    }))
+  }
+
+  function moveDetailTab(direction: number) {
+    const tabs: DetailTab[] = ['overview', 'activity', 'comments', 'commits', 'changes']
+    setState(current => ({
+      ...current,
+      detailTab: tabs[clamp(tabs.indexOf(current.detailTab) + direction, 0, tabs.length - 1)],
+      detailScroll: 0,
+      focus: current.detailPaneVisible ? 'detail' : current.focus,
+      pendingG: false
     }))
   }
 
@@ -458,7 +489,7 @@ export function App({ config }: Props) {
 
   const compact = width < 110
   const repoSlugs = currentRepoSlugs(config)
-  const detailPaneWidth = state.detailPaneVisible ? (compact ? width : Math.max(30, Math.floor(width * 0.25))) : 0
+  const detailPaneWidth = state.detailPaneVisible ? (compact ? width : Math.max(30, Math.floor(width * 0.40))) : 0
   const tableWidth = Math.max(80, width - (compact || !state.detailPaneVisible ? 4 : detailPaneWidth + 8))
   const selectedDetail = selectedPr ? state.prDetails[detailKey(selectedPr)] : undefined
   const detail = renderDetail(
@@ -467,6 +498,7 @@ export function App({ config }: Props) {
     state.loadingDetailKey,
     state.detailErrorKey,
     state.detailError,
+    state.detailTab,
     state.detailScroll,
     detailVisibleLines(height, config.debug, state.networkRequests.length)
   )

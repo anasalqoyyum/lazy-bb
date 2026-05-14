@@ -46,8 +46,8 @@ export function tableHeader(width: number): string {
   return [
     cell('', columns.cursor),
     cell('PR', columns.title),
-    cell(icons.comments, columns.comments, 'right'),
-    cell(icons.checks, columns.tasks, 'right'),
+    cell(icons.comments, columns.comments),
+    cell(icons.checks, columns.tasks),
     cell(`${icons.user} Author`, columns.author),
     cell(`${icons.branch} Branch`, columns.branch),
     cell(icons.calendar, columns.created, 'right'),
@@ -64,8 +64,8 @@ function tableRow(pr: PullRequest, cursor: string, width: number): string {
   return [
     cell(`${cursor} ${icons.pr}`, columns.cursor),
     cell(title, columns.title),
-    cell(String(pr.comment_count ?? 0), columns.comments, 'right'),
-    cell(String(pr.task_count ?? 0), columns.tasks, 'right'),
+    cell(String(pr.comment_count ?? 0), columns.comments),
+    cell(String(pr.task_count ?? 0), columns.tasks),
     cell(author, columns.author),
     cell(branch, columns.branch),
     cell(formatAge(pr.created_on), columns.created, 'right'),
@@ -77,15 +77,15 @@ function tableColumns(width: number) {
   const fixed = {
     cursor: 3,
     comments: 4,
-    tasks: 6,
+    tasks: 4,
     created: 8,
     updated: 8
   }
   const gaps = 7
   const fluid = Math.max(40, width - fixed.cursor - fixed.comments - fixed.tasks - fixed.created - fixed.updated - gaps)
   const author = Math.max(16, Math.floor(fluid * 0.2))
-  const branch = Math.max(24, Math.floor(fluid * 0.35))
-  const title = Math.max(24, fluid - author - branch)
+  const branch = Math.max(20, Math.floor(fluid * 0.3))
+  const title = Math.max(28, fluid - author - branch)
 
   return { ...fixed, title, author, branch }
 }

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "bun src/main.tsx",
+    "install:local": "./scripts/install-local.sh",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint .",
     "format": "oxfmt .",
