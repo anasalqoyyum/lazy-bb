@@ -43,3 +43,11 @@ export function clamp(value: number, min: number, max: number): number {
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
+
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'] as const
+
+export const SPINNER_FRAME_COUNT = SPINNER_FRAMES.length
+
+export function spinnerChar(frame: number): string {
+  return SPINNER_FRAMES[frame % SPINNER_FRAMES.length]
+}

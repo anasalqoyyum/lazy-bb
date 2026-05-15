@@ -11,12 +11,13 @@ export type IconSet = {
   search: string
   refresh: string
   dot: string
+  lines: string
 }
 
 const nerdFontIcons: IconSet = {
   bitbucket: '',
   repo: '',
-  pr: '',
+  pr: '',
   branch: '',
   comments: '',
   checks: '',
@@ -25,7 +26,8 @@ const nerdFontIcons: IconSet = {
   user: '',
   search: '',
   refresh: '󰑐',
-  dot: '●'
+  dot: '●',
+  lines: ''
 }
 
 const fallbackIcons: IconSet = {
@@ -40,7 +42,8 @@ const fallbackIcons: IconSet = {
   user: 'user',
   search: '/',
   refresh: 'r',
-  dot: '•'
+  dot: '•',
+  lines: '+/-'
 }
 
 export function getIcons(): IconSet {

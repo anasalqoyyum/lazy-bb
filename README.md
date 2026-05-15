@@ -1,6 +1,6 @@
-# lazy-bb
+# lazybb - Simple Bitbucket PR TUI
 
-`lazy-bb` is a keyboard-first Bitbucket Cloud terminal UI built with [OpenTUI](https://opentui.dev/). It is designed for quickly browsing repositories and open pull requests without living inside Neovim or a browser.
+`lazybb` is a keyboard-first Bitbucket Cloud terminal UI built with [OpenTUI](https://opentui.dev/). It is designed for quickly browsing repositories and open pull requests without living inside a browser.
 
 The current implementation is an OpenTUI/Bun inspired by `gh-dash`.
 
@@ -55,18 +55,18 @@ export BKT_DEBUG="1"
 export LAZY_BB_NERD_FONT="1"
 ```
 
-| Variable                      | Description                                                                                             |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `BKT_USER`                    | Bitbucket Basic Auth username/email                                                                     |
-| `BKT_TOKEN`                   | Bitbucket API token                                                                                     |
-| `BKT_WORKSPACE`               | Bitbucket Cloud workspace                                                                               |
-| `BKT_REPO`                    | Optional default repository slug. Can be comma-separated                                                |
-| `BKT_REPOS`                   | Optional comma-separated repository filter. When set, `lazy-bb` does not fetch the full repository list |
-| `BKT_FILTER`                  | Optional gh-dash-like filter: `workspace:team repo:repo-a,repo-b is:open`                               |
-| `BKT_PR_STATE`                | Optional pull request state. Defaults to `OPEN`                                                         |
-| `BKT_CACHE_TTL`               | Cache TTL in seconds. Defaults to `300`. Use `0` to disable caching                                     |
-| `BKT_DEBUG` / `LAZY_BB_DEBUG` | Show network requests in a debug panel at the bottom of the TUI                                         |
-| `LAZY_BB_NERD_FONT`           | Optional icon override. `1` enables Nerd Font icons, `0` forces text fallback                           |
+| Variable                      | Description                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `BKT_USER`                    | Bitbucket Basic Auth username/email                                                                    |
+| `BKT_TOKEN`                   | Bitbucket API token                                                                                    |
+| `BKT_WORKSPACE`               | Bitbucket Cloud workspace                                                                              |
+| `BKT_REPO`                    | Optional default repository slug. Can be comma-separated                                               |
+| `BKT_REPOS`                   | Optional comma-separated repository filter. When set, `lazybb` does not fetch the full repository list |
+| `BKT_FILTER`                  | Optional gh-dash-like filter: `workspace:team repo:repo-a,repo-b is:open`                              |
+| `BKT_PR_STATE`                | Optional pull request state. Defaults to `OPEN`                                                        |
+| `BKT_CACHE_TTL`               | Cache TTL in seconds. Defaults to `300`. Use `0` to disable caching                                    |
+| `BKT_DEBUG` / `LAZY_BB_DEBUG` | Show network requests in a debug panel at the bottom of the TUI                                        |
+| `LAZY_BB_NERD_FONT`           | Optional icon override. `1` enables Nerd Font icons, `0` forces text fallback                          |
 
 You can also create a local `.env` file:
 
@@ -93,11 +93,11 @@ Or use the filter expression form:
 export BKT_FILTER="workspace:accelbyte repo:internal-customer-portal,internal-customer-database-integration,justice-odin is:open"
 ```
 
-When `BKT_REPOS`, comma-separated `BKT_REPO`, or `repo:` in `BKT_FILTER` is set, `lazy-bb` skips the full repository-list endpoint and only loads those repositories.
+When `BKT_REPOS`, comma-separated `BKT_REPO`, or `repo:` in `BKT_FILTER` is set, `lazybb` skips the full repository-list endpoint and only loads those repositories.
 
 ## Workspace/repo auto-detection
 
-If `BKT_WORKSPACE` or `BKT_REPO` is missing, `lazy-bb` attempts to infer them from `git remote -v`.
+If `BKT_WORKSPACE` or `BKT_REPO` is missing, `lazybb` attempts to infer them from `git remote -v`.
 
 Supported Bitbucket Cloud remote examples:
 
@@ -131,14 +131,14 @@ bun run start
 Build a local standalone executable with Bun:
 
 ```bash
-bun build --compile src/main.tsx --outfile lazy-bb
+bun build --compile src/main.tsx --outfile lazybb
 ```
 
 Move it to a directory that is already on your `PATH`:
 
 ```bash
 mkdir -p ~/.local/bin
-mv lazy-bb ~/.local/bin/lazy-bb
+mv lazybb ~/.local/bin/lazybb
 ```
 
 If `~/.local/bin` is not on your `PATH`, add it to your shell profile:
@@ -150,7 +150,7 @@ export PATH="$HOME/.local/bin:$PATH"
 Then reload your shell and run:
 
 ```bash
-lazy-bb
+lazybb
 ```
 
 Enable the network debug panel with either an environment variable or CLI flag:

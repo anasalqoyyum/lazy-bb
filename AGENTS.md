@@ -1,4 +1,4 @@
-# lazy-bb OpenTUI Implementation Guide
+# lazybb OpenTUI Implementation Guide
 
 This repository is an OpenTUI/Bun TypeScript app.
 

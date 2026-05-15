@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app_name="lazy-bb"
+app_name="lazybb"
 out_dir="${HOME}/.local/bin"
 out_path="${out_dir}/${app_name}"
-profile_marker="# lazy-bb local bin"
+profile_marker="# lazybb local bin"
 profile_line='export PATH="$HOME/.local/bin:$PATH"'
 
 if ! command -v bun >/dev/null 2>&1; then

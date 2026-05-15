@@ -6,7 +6,7 @@ import type { AppConfig } from '../config'
 import { openBrowser } from './browser'
 import { copyToClipboard } from './clipboard'
 import { renderDetail, detailVisibleLines, maxDetailScroll, type DetailTab } from './detail'
-import { clamp, errorMessage } from './format'
+import { clamp, errorMessage, SPINNER_FRAME_COUNT } from './format'
 import { getIcons } from './icons'
 import { renderNetworkRequests } from './networkDebug'
 import {
@@ -45,6 +45,7 @@ type AppState = {
   detailErrorKey?: string
   detailError?: string
   networkRequests: NetworkRequestLog[]
+  spinnerFrame: number
 }
 
 type Props = {
@@ -70,7 +71,8 @@ export function App({ config }: Props) {
     detailScroll: 0,
     detailTab: 'overview',
     prDetails: {},
-    networkRequests: []
+    networkRequests: [],
+    spinnerFrame: 0
   })
 
   const loadRequestId = useRef(0)
@@ -105,6 +107,14 @@ export function App({ config }: Props) {
     if (!selectedPr || !state.detailPaneVisible) return
     void loadPullRequestDetail(selectedPr)
   }, [selectedPr?.id, repoName(selectedPr), state.detailPaneVisible])
+
+  useEffect(() => {
+    if (!state.loadingPrs && !state.loadingDetailKey) return
+    const id = setInterval(() => {
+      setState(current => ({ ...current, spinnerFrame: (current.spinnerFrame + 1) % SPINNER_FRAME_COUNT }))
+    }, 80)
+    return () => clearInterval(id)
+  }, [state.loadingPrs, state.loadingDetailKey])
 
   useKeyboard(key => {
     if (state.searchMode) {
@@ -511,12 +521,13 @@ export function App({ config }: Props) {
     state.detailError,
     state.detailTab,
     state.detailScroll,
-    detailVisibleLines(height, config.debug, state.networkRequests.length)
+    detailVisibleLines(height, config.debug, state.networkRequests.length),
+    state.spinnerFrame
   )
 
   return (
     <box width="100%" height="100%" flexDirection="column" backgroundColor={theme.bg}>
-      <box height={4} paddingX={1} flexDirection="column">
+      <box height={2} paddingX={1} flexDirection="column">
         <text fg={theme.muted}>
           <span fg={state.tab === 'mine' ? theme.text : theme.muted} bg={state.tab === 'mine' ? theme.bluePanel : undefined}>
             {' '}
@@ -549,6 +560,7 @@ export function App({ config }: Props) {
             active={state.focus === 'prs'}
             loading={state.loadingPrs}
             width={tableWidth}
+            spinnerFrame={state.spinnerFrame}
           />
         </box>
 
@@ -576,7 +588,7 @@ export function App({ config }: Props) {
         </box>
       ) : null}
 
-      <box height={2} borderStyle="single" borderColor={state.error ? theme.danger : theme.border} paddingX={1}>
+      <box height={1} paddingX={1}>
         <text fg={state.error ? theme.danger : theme.muted}>
           {state.error ?? (state.searchMode ? `/${state.search}` : state.status)} <span fg={theme.warning}>g? help</span>
         </text>

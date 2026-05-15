@@ -17,7 +17,7 @@ export function SetupError({ message }: Props) {
   return (
     <box width="100%" height="100%" backgroundColor={theme.bg} alignItems="center" justifyContent="center">
       <box width={72} borderStyle="rounded" borderColor={theme.danger} padding={2} flexDirection="column" gap={1}>
-        <text fg={theme.danger}>lazy-bb setup error</text>
+        <text fg={theme.danger}>lazybb setup error</text>
         <text fg={theme.text}>{message}</text>
         <text fg={theme.muted}>
           Set BKT_USER, BKT_TOKEN, and BKT_WORKSPACE. BKT_WORKSPACE can be inferred from a Bitbucket git remote. Optional: BKT_REPOS,

@@ -1,5 +1,5 @@
 import type { PullRequest } from '../bitbucket/models'
-import { formatAge, truncate } from './format'
+import { formatAge, spinnerChar, truncate } from './format'
 import { getIcons } from './icons'
 import { branchName, groupPrsByRepo } from './prUtils'
 import { theme } from './theme'
@@ -11,15 +11,17 @@ export function PullRequestTable({
   selected,
   active,
   loading,
-  width
+  width,
+  spinnerFrame
 }: {
   prs: PullRequest[]
   selected: number
   active: boolean
   loading: boolean
   width: number
+  spinnerFrame: number
 }) {
-  if (loading) return <text fg={theme.muted}>{'\nLoading...'}</text>
+  if (loading) return <text fg={theme.muted}>{`\n${spinnerChar(spinnerFrame)} Loading…`}</text>
   if (prs.length === 0) return <text fg={theme.muted}>{'\nNo open pull requests'}</text>
 
   let rowIndex = 0

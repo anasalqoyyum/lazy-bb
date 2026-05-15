@@ -1,5 +1,5 @@
 import type { PullRequest, PullRequestDetail } from '../bitbucket/models'
-import { clamp, firstLine, formatDate } from './format'
+import { clamp, firstLine, formatDate, spinnerChar } from './format'
 import { getIcons } from './icons'
 import { branchName, detailKey, displayAccount, repoName } from './prUtils'
 
@@ -15,11 +15,12 @@ export function renderDetail(
   detailError: string | undefined,
   tab: DetailTab,
   scroll: number,
-  visibleLines: number
+  visibleLines: number,
+  spinnerFrame: number
 ): string {
   if (!pr) return '\nSelect a pull request'
 
-  const lines = buildDetailLines(pr, detail, loadingDetailKey, detailErrorKey, detailError, tab)
+  const lines = buildDetailLines(pr, detail, loadingDetailKey, detailErrorKey, detailError, tab, spinnerFrame)
   const maxScroll = Math.max(0, lines.length - visibleLines)
   const safeScroll = clamp(scroll, 0, maxScroll)
   const marker = maxScroll > 0 ? `  [${safeScroll + 1}-${Math.min(lines.length, safeScroll + visibleLines)}/${lines.length}]` : ''
@@ -33,10 +34,12 @@ function buildDetailLines(
   loadingDetailKey: string | undefined,
   detailErrorKey: string | undefined,
   detailError: string | undefined,
-  tab: DetailTab
+  tab: DetailTab,
+  spinnerFrame: number
 ): string[] {
   const key = detailKey(pr)
   const loading = loadingDetailKey === key
+  const spinner = spinnerChar(spinnerFrame)
   const fullPr = detail?.pr ?? pr
   const author = displayAccount(fullPr.author)
   const source = branchName(fullPr.source) || 'unknown'
@@ -44,6 +47,9 @@ function buildDetailLines(
   const description = fullPr.description?.trim() || 'No description'
   const status = aggregateStatus(detail?.statuses ?? [])
   const errorLine = detailErrorKey === key && detailError ? `Detail load failed: ${detailError}` : ''
+  const linesInfo = detail?.diffstat.length
+    ? `  Diffstat: +${detail.diffstat.reduce((s, f) => s + (f.lines_added ?? 0), 0)} -${detail.diffstat.reduce((s, f) => s + (f.lines_removed ?? 0), 0)}`
+    : ''
 
   return [
     `#${fullPr.id} ${fullPr.title}`,
@@ -51,12 +57,12 @@ function buildDetailLines(
     '',
     `Repo:   ${repoName(fullPr)}`,
     `Branch: ${icons.branch} ${source} → ${destination}`,
-    `State:  ${fullPr.state}  Checks: ${detail ? status : loading ? 'loading…' : 'pending'}`,
+    `State:  ${fullPr.state}  Checks: ${loading ? spinner : detail ? status : 'pending'}${linesInfo}`,
     errorLine,
     '',
-    renderTabs(tab, detail, fullPr),
+    renderTabs(tab, detail, fullPr, loading, spinner),
     '',
-    ...renderTabContent(tab, fullPr, detail, description, loading)
+    ...renderTabContent(tab, fullPr, detail, description, loading, spinner)
   ].filter(line => line !== undefined)
 }
 
@@ -75,17 +81,22 @@ export function maxDetailScroll(
   height: number
 ): number {
   if (!pr) return 0
-  const lines = buildDetailLines(pr, detail, loadingDetailKey, detailErrorKey, detailError, tab)
+  const lines = buildDetailLines(pr, detail, loadingDetailKey, detailErrorKey, detailError, tab, 0)
   return Math.max(0, lines.length - detailVisibleLines(height, false, 0))
 }
 
-function renderTabs(tab: DetailTab, detail: PullRequestDetail | undefined, pr: PullRequest): string {
-  const tabs: Array<[DetailTab, string, number | undefined]> = [
+function renderTabs(tab: DetailTab, detail: PullRequestDetail | undefined, pr: PullRequest, loading: boolean, spinner: string): string {
+  const spin = (n: number | undefined): string | number | undefined => {
+    if (n === undefined) return undefined
+    return loading && n === 0 ? spinner : n
+  }
+
+  const tabs: Array<[DetailTab, string, string | number | undefined]> = [
     ['overview', 'Overview', undefined],
-    ['activity', 'Activity', detail?.activity.length],
-    ['comments', 'Comments', detail?.comments.length ?? pr.comment_count],
-    ['commits', 'Commits', detail?.commits.length],
-    ['changes', 'Changes', detail?.diffstat.length]
+    ['activity', 'Activity', spin(detail?.activity.length)],
+    ['comments', 'Comments', spin(detail?.comments.length) ?? pr.comment_count],
+    ['commits', 'Commits', spin(detail?.commits.length)],
+    ['changes', 'Changes', spin(detail?.diffstat.length)]
   ]
 
   return tabs.map(([key, label, count]) => `${key === tab ? '▸' : ' '} ${label}${count === undefined ? '' : ` ${count}`}`).join('  ')
@@ -96,16 +107,23 @@ function renderTabContent(
   pr: PullRequest,
   detail: PullRequestDetail | undefined,
   description: string,
-  loading: boolean
+  loading: boolean,
+  spinner: string
 ): string[] {
-  if (tab === 'overview') return renderOverview(pr, detail, description, loading)
-  if (tab === 'activity') return renderActivity(detail, loading)
-  if (tab === 'comments') return renderComments(detail, loading)
-  if (tab === 'commits') return renderCommits(detail, loading)
-  return renderChanges(detail, loading)
+  if (tab === 'overview') return renderOverview(pr, detail, description, loading, spinner)
+  if (tab === 'activity') return renderActivity(detail, loading, spinner)
+  if (tab === 'comments') return renderComments(detail, loading, spinner)
+  if (tab === 'commits') return renderCommits(detail, loading, spinner)
+  return renderChanges(detail, loading, spinner)
 }
 
-function renderOverview(pr: PullRequest, detail: PullRequestDetail | undefined, description: string, loading: boolean): string[] {
+function renderOverview(
+  pr: PullRequest,
+  detail: PullRequestDetail | undefined,
+  description: string,
+  loading: boolean,
+  spinner: string
+): string[] {
   return [
     'Description',
     ...description.split('\n'),
@@ -113,9 +131,9 @@ function renderOverview(pr: PullRequest, detail: PullRequestDetail | undefined, 
     ...renderReviewers(pr),
     '',
     'Builds',
-    ...renderStatuses(detail, loading),
+    ...renderStatuses(detail, loading, spinner),
     '',
-    loading ? 'Loading activity, comments, commits, and changes in the background…' : ''
+    loading ? `${spinner} Loading…` : ''
   ]
 }
 
@@ -142,9 +160,9 @@ function renderReviewers(pr: PullRequest): string[] {
   return lines
 }
 
-function renderStatuses(detail: PullRequestDetail | undefined, loading: boolean): string[] {
-  if (!detail) return [loading ? '⠋ Loading builds…' : 'No status data loaded yet']
-  if (detail.statuses.length === 0) return ['No statuses']
+function renderStatuses(detail: PullRequestDetail | undefined, loading: boolean, spinner: string): string[] {
+  if (!detail) return [loading ? `${spinner} Loading builds…` : 'No status data loaded yet']
+  if (detail.statuses.length === 0) return [loading ? `${spinner} Loading builds…` : 'No statuses']
   return detail.statuses.slice(0, 8).map(status => {
     const state = status.state ?? 'UNKNOWN'
     return `${statusIcon(state)} ${status.name || status.key || 'check'} (${statusLabel(state)})`
@@ -164,9 +182,9 @@ function statusLabel(state: string): string {
   return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : 'Unknown'
 }
 
-function renderActivity(detail: PullRequestDetail | undefined, loading: boolean): string[] {
-  if (!detail) return [loading ? '⠋ Loading activity…' : 'No activity loaded yet']
-  if (detail.activity.length === 0) return ['No activity']
+function renderActivity(detail: PullRequestDetail | undefined, loading: boolean, spinner: string): string[] {
+  if (!detail) return [loading ? `${spinner} Loading activity…` : 'No activity loaded yet']
+  if (detail.activity.length === 0) return [loading ? `${spinner} Loading activity…` : 'No activity']
   return detail.activity.map(item => {
     if (item.approval) return `${formatDate(item.approval.date)} ${displayAccount(item.approval.user)} approved`
     if (item.comment) return `${formatDate(item.comment.created_on)} ${displayAccount(item.comment.user)} commented`
@@ -176,9 +194,9 @@ function renderActivity(detail: PullRequestDetail | undefined, loading: boolean)
   })
 }
 
-function renderComments(detail: PullRequestDetail | undefined, loading: boolean): string[] {
-  if (!detail) return [loading ? '⠋ Loading comments…' : 'No comments loaded yet']
-  if (detail.comments.length === 0) return ['No comments']
+function renderComments(detail: PullRequestDetail | undefined, loading: boolean, spinner: string): string[] {
+  if (!detail) return [loading ? `${spinner} Loading comments…` : 'No comments loaded yet']
+  if (detail.comments.length === 0) return [loading ? `${spinner} Loading comments…` : 'No comments']
   return detail.comments.flatMap(comment => {
     const location = comment.inline?.path ? ` (${comment.inline.path}:${comment.inline.to ?? comment.inline.from ?? ''})` : ''
     const body = comment.deleted ? '[deleted]' : comment.content?.raw?.trim() || 'No content'
@@ -192,15 +210,15 @@ function renderComments(detail: PullRequestDetail | undefined, loading: boolean)
   })
 }
 
-function renderCommits(detail: PullRequestDetail | undefined, loading: boolean): string[] {
-  if (!detail) return [loading ? '⠋ Loading commits…' : 'No commits loaded yet']
-  if (detail.commits.length === 0) return ['No commits']
+function renderCommits(detail: PullRequestDetail | undefined, loading: boolean, spinner: string): string[] {
+  if (!detail) return [loading ? `${spinner} Loading commits…` : 'No commits loaded yet']
+  if (detail.commits.length === 0) return [loading ? `${spinner} Loading commits…` : 'No commits']
   return detail.commits.map(commit => `${(commit.hash || '').slice(0, 12)} ${firstLine(commit.message)}`)
 }
 
-function renderChanges(detail: PullRequestDetail | undefined, loading: boolean): string[] {
-  if (!detail) return [loading ? '⠋ Loading changes…' : 'No changes loaded yet']
-  if (detail.diffstat.length === 0) return ['No changes']
+function renderChanges(detail: PullRequestDetail | undefined, loading: boolean, spinner: string): string[] {
+  if (!detail) return [loading ? `${spinner} Loading changes…` : 'No changes loaded yet']
+  if (detail.diffstat.length === 0) return [loading ? `${spinner} Loading changes…` : 'No changes']
   return detail.diffstat.map(file => {
     const path = file.new?.path || file.old?.path || 'unknown'
     return `${file.status ?? 'modified'} +${file.lines_added ?? 0} -${file.lines_removed ?? 0} ${path}`
