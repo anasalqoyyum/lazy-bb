@@ -6,21 +6,28 @@ out_dir="${HOME}/.local/bin"
 out_path="${out_dir}/${app_name}"
 profile_marker="# lazybb local bin"
 profile_line='export PATH="$HOME/.local/bin:$PATH"'
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if ! command -v bun >/dev/null 2>&1; then
-  echo "Error: bun is required but was not found on PATH." >&2
+if ! command -v node >/dev/null 2>&1; then
+  echo "Error: node is required but was not found on PATH." >&2
+  exit 1
+fi
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "Error: pnpm is required but was not found on PATH." >&2
   exit 1
 fi
 
 mkdir -p "$out_dir"
 
-echo "Compiling ${app_name}..."
-bun build --compile src/main.tsx --outfile "$app_name"
-
-mv "$app_name" "$out_path"
+cat > "$out_path" <<EOF
+#!/usr/bin/env bash
+cd "$repo_dir"
+exec pnpm exec tsx src/main.tsx "\$@"
+EOF
 chmod +x "$out_path"
 
-echo "Installed ${app_name} to ${out_path}"
+echo "Installed ${app_name} launcher to ${out_path}"
 
 case ":${PATH}:" in
   *":${out_dir}:"*)

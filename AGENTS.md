@@ -1,10 +1,10 @@
 # lazybb OpenTUI Implementation Guide
 
-This repository is an OpenTUI/Bun TypeScript app.
+This repository is an OpenTUI/Node.js TypeScript app.
 
 ## Primary stack
 
-- Runtime: Bun
+- Runtime: Node.js
 - TUI: OpenTUI
 - UI binding: `@opentui/react`
 - Language: TypeScript
@@ -15,14 +15,14 @@ This repository is an OpenTUI/Bun TypeScript app.
 Allowed validation command:
 
 ```bash
-bunx tsc --noEmit
+pnpm exec tsc --noEmit
 ```
 
 Do not run start/dev commands unless the user explicitly asks:
 
 ```bash
-bun src/main.tsx
-bun run start
+pnpm exec tsx src/main.tsx
+pnpm start
 ```
 
 Do not run build/bundle/release commands unless explicitly requested.
@@ -150,7 +150,7 @@ Do not commit secrets or local credentials.
 Run:
 
 ```bash
-bunx tsc --noEmit
+pnpm exec tsc --noEmit
 ```
 
 If typecheck fails, either fix it or clearly report the failure and blocker.

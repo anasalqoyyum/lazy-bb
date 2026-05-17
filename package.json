@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "bun src/main.tsx",
+    "start": "tsx src/main.tsx",
     "install:local": "./scripts/install-local.sh",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint .",
     "format": "oxfmt .",
-    "format:check": "oxfmt --check ."
+    "format:check": "oxfmt --check .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@opentui/core": "latest",
@@ -17,10 +18,21 @@
     "react": "latest"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/node": "latest",
     "@types/react": "^19.2.14",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "oxfmt": "^0.49.0",
     "oxlint": "^1.64.0",
+    "tsx": "latest",
     "typescript": "latest"
-  }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc}": [
+      "oxfmt",
+      "oxlint"
+    ],
+    "*.{md,yml,yaml}": "oxfmt"
+  },
+  "packageManager": "pnpm@10.0.0"
 }

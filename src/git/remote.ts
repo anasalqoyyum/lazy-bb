@@ -1,3 +1,6 @@
+import { spawn } from 'node:child_process'
+import { env } from 'node:process'
+
 export type RemoteLocator = {
   host: string
   kind: 'cloud' | 'dc'
@@ -21,13 +24,7 @@ export async function detectRemote(cwd = '.'): Promise<RemoteLocator | undefined
 }
 
 export async function listRemotes(cwd = '.'): Promise<Map<string, string[]>> {
-  const proc = Bun.spawn(['git', '-C', cwd, 'remote', '-v'], {
-    env: { ...Bun.env, GIT_TERMINAL_PROMPT: '0' },
-    stdout: 'pipe',
-    stderr: 'pipe'
-  })
-
-  const [stdout, stderr, exitCode] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited])
+  const { stdout, stderr, exitCode } = await runGit(['-C', cwd, 'remote', '-v'])
 
   if (exitCode !== 0) {
     const message = stderr.trim()
@@ -52,6 +49,27 @@ export async function listRemotes(cwd = '.'): Promise<Map<string, string[]>> {
   }
 
   return remotes
+}
+
+function runGit(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  return new Promise(resolve => {
+    const proc = spawn('git', args, {
+      env: { ...env, GIT_TERMINAL_PROMPT: '0' },
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+    const stdout: Buffer[] = []
+    const stderr: Buffer[] = []
+
+    proc.stdout.on('data', chunk => stdout.push(chunk))
+    proc.stderr.on('data', chunk => stderr.push(chunk))
+    proc.on('close', code => {
+      resolve({
+        stdout: Buffer.concat(stdout).toString('utf8'),
+        stderr: Buffer.concat(stderr).toString('utf8'),
+        exitCode: code ?? 1
+      })
+    })
+  })
 }
 
 export function parseRemoteLocator(raw: string): RemoteLocator | undefined {

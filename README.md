@@ -2,7 +2,7 @@
 
 `lazybb` is a keyboard-first Bitbucket Cloud terminal UI built with [OpenTUI](https://opentui.dev/). It is designed for quickly browsing repositories and open pull requests without living inside a browser.
 
-The current implementation is an OpenTUI/Bun inspired by `gh-dash`.
+The current implementation is an OpenTUI/Node.js app inspired by `gh-dash`.
 
 ## Features
 
@@ -17,7 +17,8 @@ The current implementation is an OpenTUI/Bun inspired by `gh-dash`.
 
 ## Prerequisites
 
-- [Bun](https://bun.sh/) installed
+- [Node.js](https://nodejs.org/) installed
+- [pnpm](https://pnpm.io/) installed
 - Bitbucket Cloud account
 - Bitbucket API token
 - A terminal supported by OpenTUI
@@ -111,40 +112,28 @@ Explicit environment variables always win over inferred values.
 ## Install dependencies
 
 ```bash
-bun install
+pnpm install
 ```
 
 ## Run
 
 ```bash
-bun src/main.tsx
+pnpm exec tsx src/main.tsx
 ```
 
 Or use the package script:
 
 ```bash
-bun run start
+pnpm start
 ```
 
-## Compile locally and add to PATH
+## Install locally and add to PATH
 
-Build a local standalone executable with Bun:
-
-```bash
-bun build --compile src/main.tsx --outfile lazybb
-```
-
-Move it to a directory that is already on your `PATH`:
+Create a local launcher in `~/.local/bin`:
 
 ```bash
-mkdir -p ~/.local/bin
-mv lazybb ~/.local/bin/lazybb
-```
-
-If `~/.local/bin` is not on your `PATH`, add it to your shell profile:
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
+pnpm install
+pnpm run install:local
 ```
 
 Then reload your shell and run:
@@ -156,14 +145,14 @@ lazybb
 Enable the network debug panel with either an environment variable or CLI flag:
 
 ```bash
-BKT_DEBUG=1 bun src/main.tsx
-bun src/main.tsx --debug
+BKT_DEBUG=1 pnpm exec tsx src/main.tsx
+pnpm exec tsx src/main.tsx --debug
 ```
 
 ## Typecheck
 
 ```bash
-bunx tsc --noEmit
+pnpm exec tsc --noEmit
 ```
 
 ## Keybindings

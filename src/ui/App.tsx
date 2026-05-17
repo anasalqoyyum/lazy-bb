@@ -100,7 +100,9 @@ export function App({ config }: Props) {
       if (text) copyToClipboard(text, renderer)
     }
     renderer.on('selection', handler)
-    return () => { renderer.off('selection', handler) }
+    return () => {
+      renderer.off('selection', handler)
+    }
   }, [])
 
   useEffect(() => {
@@ -450,7 +452,15 @@ export function App({ config }: Props) {
   }
 
   function scrollDetail(delta: number) {
-    const max = maxDetailScroll(selectedPr, selectedDetail, state.loadingDetailKey, state.detailErrorKey, state.detailError, state.detailTab, height)
+    const max = maxDetailScroll(
+      selectedPr,
+      selectedDetail,
+      state.loadingDetailKey,
+      state.detailErrorKey,
+      state.detailError,
+      state.detailTab,
+      height
+    )
     setState(current => ({
       ...current,
       detailScroll: clamp(current.detailScroll + delta, 0, max),
@@ -459,7 +469,15 @@ export function App({ config }: Props) {
   }
 
   function scrollDetailToEnd() {
-    const max = maxDetailScroll(selectedPr, selectedDetail, state.loadingDetailKey, state.detailErrorKey, state.detailError, state.detailTab, height)
+    const max = maxDetailScroll(
+      selectedPr,
+      selectedDetail,
+      state.loadingDetailKey,
+      state.detailErrorKey,
+      state.detailError,
+      state.detailTab,
+      height
+    )
     setState(current => ({ ...current, detailScroll: max, pendingG: false }))
   }
 
@@ -510,7 +528,7 @@ export function App({ config }: Props) {
 
   const compact = width < 110
   const repoSlugs = currentRepoSlugs(config)
-  const detailPaneWidth = state.detailPaneVisible ? (compact ? width : Math.max(30, Math.floor(width * 0.40))) : 0
+  const detailPaneWidth = state.detailPaneVisible ? (compact ? width : Math.max(30, Math.floor(width * 0.4))) : 0
   const tableWidth = Math.max(80, width - (compact || !state.detailPaneVisible ? 4 : detailPaneWidth + 8))
   const selectedDetail = selectedPr ? state.prDetails[detailKey(selectedPr)] : undefined
   const detail = renderDetail(

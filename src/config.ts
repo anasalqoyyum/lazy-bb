@@ -1,3 +1,7 @@
+import { existsSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
+import { argv, env as processEnv } from 'node:process'
+
 import { detectRemote } from './git/remote'
 
 export type AppConfig = {
@@ -53,7 +57,7 @@ export async function loadConfig(): Promise<AppConfig> {
 }
 
 function env(name: string): string {
-  return Bun.env[name]?.trim() ?? ''
+  return processEnv[name]?.trim() ?? ''
 }
 
 function splitList(value: string): string[] {
@@ -98,14 +102,13 @@ function parseDebugFlag(): boolean {
   if (envValue === '1' || envValue.toLowerCase() === 'true') return true
   if (envValue === '0' || envValue.toLowerCase() === 'false') return false
 
-  return Bun.argv.includes('--debug')
+  return argv.includes('--debug')
 }
 
 async function loadDotEnvFile(): Promise<void> {
-  const file = Bun.file('.env')
-  if (!(await file.exists())) return
+  if (!existsSync('.env')) return
 
-  const content = await file.text()
+  const content = await readFile('.env', 'utf8')
 
   for (const line of content.split('\n')) {
     const trimmed = line.trim()
@@ -118,8 +121,8 @@ async function loadDotEnvFile(): Promise<void> {
     const rawValue = trimmed.slice(equalsIndex + 1).trim()
     const value = rawValue.replace(/^['"]|['"]$/g, '')
 
-    if (!Bun.env[key]) {
-      Bun.env[key] = value
+    if (!processEnv[key]) {
+      processEnv[key] = value
     }
   }
 }

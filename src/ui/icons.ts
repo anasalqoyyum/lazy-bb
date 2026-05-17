@@ -1,3 +1,5 @@
+import { env } from 'node:process'
+
 export type IconSet = {
   bitbucket: string
   repo: string
@@ -47,7 +49,7 @@ const fallbackIcons: IconSet = {
 }
 
 export function getIcons(): IconSet {
-  const override = Bun.env.LAZY_BB_NERD_FONT?.trim()
+  const override = env.LAZY_BB_NERD_FONT?.trim()
   if (override === '0' || override === 'false') return fallbackIcons
 
   return nerdFontIcons
