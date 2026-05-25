@@ -19,11 +19,11 @@
   },
   "devDependencies": {
     "@types/node": "latest",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.15",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
-    "oxfmt": "^0.49.0",
-    "oxlint": "^1.64.0",
+    "oxfmt": "^0.51.0",
+    "oxlint": "^1.66.0",
     "tsx": "latest",
     "typescript": "latest"
   },
